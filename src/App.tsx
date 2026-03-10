@@ -197,340 +197,549 @@ const I = {
    CSS
 ───────────────────────────────────────── */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Figtree:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --bg:#080a0f;
-  --bg2:#0d1017;
-  --surface:#111520;
-  --surface2:#161b29;
-  --surface3:#1c2235;
+  --bg:#0B0B0F;
+  --bg2:#111116;
+  --surface:#18181E;
+  --surface2:#1E1E26;
+  --surface3:#252530;
+  --surface4:#2E2E3C;
   --border:rgba(255,255,255,0.055);
-  --border2:rgba(255,255,255,0.1);
-  --text:#dde3f0;
-  --text2:#8892aa;
-  --muted:#454e66;
-  --accent:#5b8df5;
-  --accent2:#7aa3ff;
-  --accent-dim:rgba(91,141,245,0.12);
-  --accent-glow:rgba(91,141,245,0.3);
-  --green:#22d3a0;
-  --green-dim:rgba(34,211,160,0.1);
-  --red:#f06060;
-  --red-dim:rgba(240,96,96,0.1);
-  --r:10px;
-  --r-lg:14px;
-  --sidebar:220px;
+  --border2:rgba(255,255,255,0.09);
+  --text:#ECEEF5;
+  --text2:#8A8CA4;
+  --muted:#4A4C64;
+  --muted2:#333348;
+  --accent:#4B8EF0;
+  --accent2:#74AEFF;
+  --accent-dim:rgba(75,142,240,0.1);
+  --accent-glow:rgba(75,142,240,0.22);
+  --accent-border:rgba(75,142,240,0.22);
+  --green:#2DD4A0;
+  --green-dim:rgba(45,212,160,0.1);
+  --red:#F05A5A;
+  --red-dim:rgba(240,90,90,0.1);
+  --orange:#FF9A3C;
+  --purple:#9B87F5;
+  --r-xs:6px;
+  --r-sm:8px;
+  --r:12px;
+  --r-lg:16px;
+  --r-xl:20px;
+  --r-2xl:26px;
+  --nav-h:68px;
+  --topbar-h:56px;
+  --sidebar-w:240px;
+  --font:'Plus Jakarta Sans',sans-serif;
+  --mono:'JetBrains Mono',monospace;
 }
 
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;-webkit-font-smoothing:antialiased}
+html,body{
+  height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
+  overscroll-behavior:none;
+}
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:999px}
 
 .hidden{display:none!important}
 
-.app{display:flex;height:100vh;overflow:hidden}
+/* ── Layout ── */
+.app{display:flex;height:100dvh;overflow:hidden;background:var(--bg);}
 
+/* ── Sidebar ── */
 .sidebar{
-  width:var(--sidebar);flex-shrink:0;
+  width:var(--sidebar-w);flex-shrink:0;
   background:var(--bg2);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;padding:0;
+  display:flex;flex-direction:column;
 }
-.sidebar-top{padding:18px 16px 16px;border-bottom:1px solid var(--border);}
+
+.sidebar-top{padding:18px 14px 14px;border-bottom:1px solid var(--border);}
+
 .logo-mark{display:flex;align-items:center;gap:10px;}
 .logo-icon{
-  width:30px;height:30px;
-  background:linear-gradient(135deg,var(--accent) 0%,#8b5cf6 100%);
-  border-radius:8px;display:flex;align-items:center;justify-content:center;
-  color:#fff;box-shadow:0 3px 12px rgba(91,141,245,0.4);flex-shrink:0;
+  width:32px;height:32px;
+  background:linear-gradient(145deg,var(--accent) 0%,var(--purple) 100%);
+  border-radius:9px;display:flex;align-items:center;justify-content:center;
+  color:#fff;box-shadow:0 4px 14px var(--accent-glow);flex-shrink:0;
 }
-.logo-text{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);}
+.logo-text{font-size:14.5px;font-weight:700;color:var(--text);letter-spacing:-0.02em;}
 .logo-text span{color:var(--accent);}
-.logo-sub{font-size:9.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:0.09em;margin-top:1px;}
+.logo-sub{font-size:9.5px;color:var(--muted);font-family:var(--mono);letter-spacing:0.07em;margin-top:1px;}
 
-.sidebar-nav{flex:1;padding:10px 8px;overflow-y:auto;}
-.nav-label{font-size:9.5px;font-family:'JetBrains Mono',monospace;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;padding:8px 8px 5px;}
+.sidebar-nav{flex:1;padding:8px 10px;overflow-y:auto;}
+.nav-section-label{
+  font-size:9.5px;font-family:var(--mono);color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.09em;
+  padding:10px 8px 4px;
+}
 .nav-item{
-  display:flex;align-items:center;gap:8px;
-  padding:6px 8px;border-radius:7px;
-  font-size:13px;font-weight:500;color:var(--text2);
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:var(--r);
+  font-size:13.5px;font-weight:500;color:var(--text2);
   cursor:pointer;transition:all 0.12s;
   border:none;background:none;width:100%;text-align:left;
-  margin-bottom:1px;
+  margin-bottom:2px;
 }
 .nav-item:hover{background:var(--surface);color:var(--text);}
 .nav-item.active{background:var(--accent-dim);color:var(--accent);}
 .nav-item-icon{flex-shrink:0;display:flex;align-items:center;}
 
-.sidebar-bottom{padding:12px 8px;border-top:1px solid var(--border);}
-.status-card{
-  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
-  padding:10px 12px;
+.sidebar-bottom{padding:10px 10px 12px;border-top:1px solid var(--border);}
+.storage-widget{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:12px 14px;margin-bottom:8px;
 }
-.status-row{display:flex;align-items:center;gap:7px;}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s ease infinite;flex-shrink:0;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.35}}
-.status-name{font-size:11.5px;font-weight:600;color:var(--green);font-family:'JetBrains Mono',monospace;}
-.status-repo{font-size:10px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.storage-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.storage-label{font-size:11px;font-weight:600;color:var(--text2);}
+.storage-pct{font-size:11px;font-weight:700;color:var(--accent);font-family:var(--mono);}
+.storage-track{height:4px;background:var(--surface3);border-radius:999px;overflow:hidden;margin-bottom:6px;}
+.storage-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px;transition:width 0.6s ease;}
+.storage-meta{font-size:10px;color:var(--muted);font-family:var(--mono);}
+.status-pill{
+  display:flex;align-items:center;gap:7px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:7px 10px;
+}
+.status-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;
+  animation:pulse-dot 2.5s ease infinite;
+}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-text{font-size:11px;font-weight:600;color:var(--green);font-family:var(--mono);}
+.status-repo{font-size:10px;color:var(--muted);font-family:var(--mono);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;}
 
-.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+/* ── Main ── */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 
+/* ── Topbar ── */
 .topbar{
-  display:flex;align-items:center;gap:10px;
-  padding:0 20px;height:54px;
+  height:var(--topbar-h);
+  display:flex;align-items:center;gap:10px;padding:0 16px;
   border-bottom:1px solid var(--border);
-  background:var(--bg2);flex-shrink:0;
+  background:rgba(11,11,15,0.88);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  flex-shrink:0;z-index:10;
+  position:sticky;top:0;
 }
-.breadcrumb{display:flex;align-items:center;gap:0;flex:1;min-width:0;overflow:hidden;}
+.mobile-menu-btn{
+  display:none;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:var(--r);
+  border:none;background:var(--surface);color:var(--text2);
+  cursor:pointer;flex-shrink:0;transition:all 0.12s;
+}
+.mobile-menu-btn:hover{background:var(--surface2);color:var(--text);}
+
+.breadcrumb{display:flex;align-items:center;flex:1;min-width:0;overflow:hidden;}
 .crumb{
   display:inline-flex;align-items:center;gap:5px;
-  padding:4px 7px;border-radius:6px;
+  padding:5px 8px;border-radius:var(--r-sm);
   font-size:13px;font-weight:500;color:var(--text2);
-  background:none;border:none;cursor:pointer;transition:all 0.12s;white-space:nowrap;
+  background:none;border:none;cursor:pointer;
+  transition:all 0.12s;white-space:nowrap;
 }
 .crumb:hover{background:var(--surface2);color:var(--text);}
-.crumb:last-child{color:var(--text);}
-.crumb-sep{color:var(--muted);padding:0;font-size:11px;user-select:none;display:flex;align-items:center;}
+.crumb:last-child{color:var(--text);font-weight:600;}
+.crumb-sep{color:var(--muted);padding:0 1px;display:flex;align-items:center;}
 
 .search-box{
   display:flex;align-items:center;gap:8px;
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:8px;padding:0 11px;height:34px;width:220px;
-  transition:border-color 0.15s,box-shadow 0.15s,width 0.2s;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:999px;padding:0 14px;height:36px;width:200px;
+  transition:all 0.2s;
 }
-.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);width:260px;}
-.search-box input{background:none;border:none;outline:none;color:var(--text);font-family:'Figtree',sans-serif;font-size:13px;width:100%;}
+.search-box:focus-within{
+  border-color:var(--accent-border);
+  box-shadow:0 0 0 3px var(--accent-dim);
+  background:var(--surface);width:240px;
+}
+.search-box input{
+  background:none;border:none;outline:none;color:var(--text);
+  font-family:var(--font);font-size:13px;width:100%;
+}
 .search-box input::placeholder{color:var(--muted);}
 
 .topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
-.view-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;padding:2px;}
-.vt-btn{width:28px;height:26px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);transition:all 0.12s;border-radius:5px;}
+.view-toggle{
+  display:flex;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;padding:3px;gap:2px;
+}
+.vt-btn{
+  width:30px;height:28px;display:flex;align-items:center;justify-content:center;
+  background:none;border:none;cursor:pointer;color:var(--muted);
+  transition:all 0.12s;border-radius:var(--r-xs);
+}
 .vt-btn.active{background:var(--surface3);color:var(--text);}
+.vt-btn:hover:not(.active){color:var(--text2);}
 
+/* ── Buttons ── */
 .btn{
   display:inline-flex;align-items:center;gap:6px;
-  font-family:'Figtree',sans-serif;font-size:13px;font-weight:500;
-  border-radius:8px;padding:5px 13px;height:32px;
+  font-family:var(--font);font-size:13px;font-weight:600;
+  border-radius:var(--r);padding:0 14px;height:36px;
   border:1px solid var(--border);background:var(--surface);color:var(--text2);
-  cursor:pointer;transition:all 0.12s;
+  cursor:pointer;transition:all 0.12s;letter-spacing:-0.01em;
 }
 .btn:hover:not(:disabled){background:var(--surface2);color:var(--text);}
-.btn:disabled{opacity:0.5;cursor:not-allowed;}
-.btn-primary{background:var(--accent);color:#fff;border-color:rgba(0,0,0,0.2);box-shadow:0 6px 16px rgba(91,141,245,0.25);}
-.btn-primary:hover:not(:disabled){filter:brightness(1.05);color:#fff;}
-.btn-soft{background:var(--accent-dim);color:var(--accent);border-color:rgba(91,141,245,0.2);}
-.btn-soft:hover:not(:disabled){background:rgba(91,141,245,0.18);}
+.btn:active:not(:disabled){transform:scale(0.97);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-primary{background:var(--accent);color:#fff;border-color:transparent;box-shadow:0 4px 16px var(--accent-glow);}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1);color:#fff;}
+.btn-soft{background:var(--accent-dim);color:var(--accent);border-color:var(--accent-border);}
+.btn-soft:hover:not(:disabled){background:rgba(75,142,240,0.18);}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--text2);}
-.btn-ghost:hover:not(:disabled){background:var(--surface2);color:var(--text);}
-.btn-danger{background:transparent;color:var(--text2);border:1px solid var(--border);}
-.btn-danger:hover:not(:disabled){background:var(--red-dim);color:var(--red);border-color:rgba(240,96,96,0.25);}
-.btn-icon{width:32px;height:32px;padding:0;justify-content:center;}
+.btn-ghost:hover:not(:disabled){background:var(--surface);color:var(--text);}
+.btn-danger{background:transparent;color:var(--text2);border-color:var(--border);}
+.btn-danger:hover:not(:disabled){background:var(--red-dim);color:var(--red);border-color:rgba(240,90,90,0.25);}
+.btn-icon{width:36px;height:36px;padding:0;justify-content:center;}
 
-.content{flex:1;overflow-y:auto;padding:20px;position:relative;}
+/* ── Content ── */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px;-webkit-overflow-scrolling:touch;}
 
-.action-bar{display:flex;align-items:center;gap:7px;margin-bottom:14px;flex-wrap:wrap;}
+/* ── Action bar ── */
+.action-bar{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
 .ab-pill{
-  font-size:11.5px;font-family:'JetBrains Mono',monospace;
-  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
-  padding:3px 9px;color:var(--text2);
+  font-size:11.5px;font-family:var(--mono);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xs);padding:3px 9px;color:var(--text2);
 }
-.ab-pill.accent{color:var(--accent);border-color:rgba(91,141,245,0.2);background:var(--accent-dim);}
+.ab-pill.accent{color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim);}
 .ab-sep{width:1px;height:16px;background:var(--border2);}
 .ab-space{flex:1;}
 
+/* ── Error bar ── */
 .error-bar{
   display:flex;align-items:center;gap:9px;
-  background:var(--red-dim);border:1px solid rgba(240,96,96,0.2);
+  background:var(--red-dim);border:1px solid rgba(240,90,90,0.18);
   border-radius:var(--r);padding:10px 14px;margin-bottom:14px;
   font-size:13px;color:var(--red);
 }
 
-.file-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
-.ft-head{
-  display:grid;grid-template-columns:2.4fr 88px 80px 32px;gap:8px;
-  padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2);
+/* ── File table ── */
+.file-table{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);overflow:hidden;
 }
-.ft-head span{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+.ft-head{
+  display:grid;grid-template-columns:2.5fr 80px 70px 36px;gap:8px;
+  padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface2);
+}
+.ft-head span{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
 
 .ft-row{
-  display:grid;grid-template-columns:2.4fr 88px 80px 32px;gap:8px;
-  padding:0 14px;align-items:center;height:52px;
+  display:grid;grid-template-columns:2.5fr 80px 70px 36px;gap:8px;
+  padding:0 16px;align-items:center;min-height:56px;
   background:transparent;border:none;border-bottom:1px solid var(--border);
   cursor:pointer;transition:background 0.1s;
   width:100%;text-align:left;position:relative;
 }
 .ft-row:last-child{border-bottom:none;}
-.ft-row:hover{background:var(--surface2);}
+.ft-row:hover{background:rgba(255,255,255,0.022);}
+.ft-row:active{background:rgba(255,255,255,0.032);}
 .ft-row.selected{background:var(--accent-dim);}
-.ft-row.selected::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);}
-.ft-row.drop-target{background:var(--accent-dim);outline:1px dashed var(--accent);outline-offset:-2px;}
+.ft-row.selected::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);border-radius:0 1px 1px 0;}
+.ft-row.drop-target{background:var(--accent-dim);outline:1.5px dashed var(--accent);outline-offset:-2px;}
 
-.name-cell{display:flex;align-items:center;gap:10px;min-width:0;}
-.icon-wrap{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;}
+.name-cell{display:flex;align-items:center;gap:12px;min-width:0;}
+.icon-wrap{
+  width:38px;height:38px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;position:relative;
+}
 .icon-folder{background:var(--accent-dim);}
 .icon-file{background:var(--surface3);}
 .ext-pip{position:absolute;bottom:-2px;right:-2px;width:9px;height:9px;border-radius:50%;border:2px solid var(--surface);}
 .item-name{font-size:13.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.item-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:1px;}
-.cell-mono{font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;}
-.sel-check{width:20px;height:20px;border-radius:5px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.item-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
+.cell-mono{font-size:11.5px;color:var(--text2);font-family:var(--mono);}
+.sel-check{width:22px;height:22px;border-radius:6px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;}
 
-.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+/* ── Grid ── */
+.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
 .grid-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
-  padding:14px 10px 10px;cursor:pointer;transition:all 0.15s;text-align:center;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:16px 12px 12px;
+  cursor:pointer;transition:all 0.15s;text-align:center;
   position:relative;width:100%;
 }
 .grid-card:hover{background:var(--surface2);border-color:var(--border2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
-.grid-card.selected{background:var(--accent-dim);border-color:rgba(91,141,245,0.3);}
+.grid-card:active{transform:scale(0.97);}
+.grid-card.selected{background:var(--accent-dim);border-color:var(--accent-border);}
 .grid-card.drop-target{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-dim);}
 .grid-sel-badge{
   position:absolute;top:8px;right:8px;
-  width:16px;height:16px;border-radius:4px;background:var(--accent);
+  width:18px;height:18px;border-radius:5px;background:var(--accent);
   display:flex;align-items:center;justify-content:center;color:#fff;
 }
-.grid-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 9px;position:relative;}
+.grid-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;position:relative;}
 .grid-icon.fi{background:var(--accent-dim);}
 .grid-icon.di{background:var(--surface3);}
-.grid-name{font-size:11.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.grid-meta{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px;}
+.grid-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.grid-meta{font-size:10.5px;color:var(--muted);font-family:var(--mono);margin-top:3px;}
 
-.skeleton{background:linear-gradient(90deg,var(--surface2) 0%,var(--surface3) 50%,var(--surface2) 100%);background-size:200% 100%;animation:shimmer 1.4s ease infinite;border-radius:5px;}
+/* ── Skeleton ── */
+.skeleton{
+  background:linear-gradient(90deg,var(--surface2) 0%,var(--surface3) 50%,var(--surface2) 100%);
+  background-size:200% 100%;animation:shimmer 1.5s ease infinite;border-radius:5px;
+}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
+/* ── Empty ── */
 .empty{padding:64px 20px;text-align:center;}
-.empty-icon{width:52px;height:52px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
-.empty p{font-size:14px;font-weight:500;color:var(--text2);}
-.empty span{font-size:12px;color:var(--muted);margin-top:4px;display:block;}
+.empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+.empty p{font-size:14px;font-weight:600;color:var(--text2);}
+.empty span{font-size:12px;color:var(--muted);margin-top:5px;display:block;}
 
-.toast-shelf{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:200;pointer-events:none;}
+/* ── Toasts ── */
+.toast-shelf{position:fixed;bottom:24px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:1000;pointer-events:none;}
 .toast{
-  background:var(--surface);border:1px solid var(--border);border-radius:9px;
-  padding:8px 12px;min-width:220px;max-width:320px;
-  font-size:12.5px;color:var(--text2);display:flex;align-items:center;gap:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.35);
-  animation:toastIn 0.16s ease;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r-lg);padding:10px 14px;
+  min-width:220px;max-width:340px;
+  font-size:13px;color:var(--text2);
+  display:flex;align-items:center;gap:9px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2);
+  animation:toast-in 0.22s cubic-bezier(0.34,1.56,0.64,1);
 }
-.toast.success{border-color:rgba(34,211,160,0.4);color:var(--green);}
-.toast.error{border-color:rgba(240,96,96,0.4);color:var(--red);}
-.toast .ti{width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
-.toast.success .ti{color:var(--green);} 
-.toast.error .ti{color:var(--red);} 
-.toast.info .ti{color:var(--accent);} 
-@keyframes toastIn{from{transform:translateX(16px);opacity:0}to{transform:none;opacity:1}}
+.toast.success{border-color:rgba(45,212,160,0.28);}
+.toast.error{border-color:rgba(240,90,90,0.28);}
+.toast .ti{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.toast.success .ti{color:var(--green);}
+.toast.error .ti{color:var(--red);}
+.toast.info .ti{color:var(--accent);}
+@keyframes toast-in{from{transform:translateY(10px) scale(0.93);opacity:0}to{transform:none;opacity:1}}
 
-.upload-panel{
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:12px;padding:10px 12px;margin-bottom:14px;
-}
-.upload-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.upload-title{font-size:12px;font-weight:600;color:var(--text);}
-.upload-count{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
-.upload-list{display:flex;flex-direction:column;gap:8px;}
-.upload-item{display:grid;grid-template-columns:1fr 56px;gap:10px;align-items:center;}
+/* ── Upload panel ── */
+.upload-panel{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:12px 14px;margin-bottom:14px;}
+.upload-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.upload-title{font-size:12.5px;font-weight:600;color:var(--text);}
+.upload-count{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.upload-list{display:flex;flex-direction:column;gap:10px;}
+.upload-item{display:grid;grid-template-columns:1fr 52px;gap:10px;align-items:center;}
+.upload-row{display:flex;flex-direction:column;gap:5px;}
 .upload-name{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.upload-status{font-size:11px;color:var(--muted);text-align:right;}
-.upload-bar{height:6px;background:var(--surface3);border-radius:999px;overflow:hidden;}
-.upload-bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));}
-.upload-bar.error > span{background:linear-gradient(90deg,#f87171,#fb7185);}
-.upload-row{display:flex;flex-direction:column;gap:6px;}
+.upload-status{font-size:11px;color:var(--muted);text-align:right;font-family:var(--mono);}
+.upload-bar{height:3px;background:var(--surface3);border-radius:999px;overflow:hidden;}
+.upload-bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.2s ease;}
+.upload-bar.error>span{background:var(--red);}
 
+/* ── Drop overlay ── */
 .drop-overlay{
   position:fixed;inset:0;z-index:100;
   display:flex;align-items:center;justify-content:center;
-  background:rgba(8,10,15,0.8);backdrop-filter:blur(4px);
+  background:rgba(8,8,14,0.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   pointer-events:none;
 }
 .drop-card{
-  background:var(--surface3);border:2px dashed var(--accent);
-  border-radius:20px;padding:40px 60px;text-align:center;
-  animation:dropIn 0.2s ease;
+  background:var(--surface2);border:2px dashed var(--accent);
+  border-radius:var(--r-2xl);padding:48px 72px;text-align:center;
+  animation:drop-scale 0.22s cubic-bezier(0.34,1.56,0.64,1);
 }
-@keyframes dropIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
-.drop-icon{font-size:36px;margin-bottom:10px;}
-.drop-title{font-size:16px;font-weight:700;color:var(--accent);font-family:'Syne',sans-serif;}
-.drop-sub{font-size:12px;color:var(--text2);margin-top:5px;}
+@keyframes drop-scale{from{transform:scale(0.88);opacity:0}to{transform:scale(1);opacity:1}}
+.drop-icon{font-size:40px;margin-bottom:12px;}
+.drop-title{font-size:18px;font-weight:700;color:var(--accent);letter-spacing:-0.02em;}
+.drop-sub{font-size:13px;color:var(--text2);margin-top:6px;}
 
+/* ── Viewer ── */
 .viewer-overlay{
-  position:fixed;inset:0;z-index:300;background:rgba(5,8,14,0.7);
+  position:fixed;inset:0;z-index:300;
+  background:rgba(5,5,10,0.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   display:flex;align-items:center;justify-content:center;padding:24px;
+  animation:fade-in 0.15s ease;
 }
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
 .viewer-card{
-  background:var(--surface);border:1px solid var(--border2);border-radius:16px;
-  width:min(980px,92vw);max-height:88vh;display:flex;flex-direction:column;
-  box-shadow:0 24px 80px rgba(0,0,0,0.45);
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r-2xl);width:min(980px,92vw);max-height:90vh;
+  display:flex;flex-direction:column;
+  box-shadow:0 32px 80px rgba(0,0,0,0.5);
+  animation:slide-up 0.22s cubic-bezier(0.34,1.56,0.64,1);
 }
-.viewer-head{
-  display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);
-}
-.viewer-title{font-size:13px;color:var(--text);font-weight:600;}
+@keyframes slide-up{from{transform:translateY(18px);opacity:0}to{transform:none;opacity:1}}
+.viewer-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);}
+.viewer-title{font-size:13.5px;font-weight:600;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.viewer-actions{display:flex;gap:6px;flex-shrink:0;}
 .viewer-body{padding:16px;overflow:auto;flex:1;}
 .viewer-img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto;}
-.viewer-text{white-space:pre-wrap;font-size:12.5px;line-height:1.5;color:var(--text2);font-family:'JetBrains Mono',monospace;}
-.viewer-actions{margin-left:auto;display:flex;gap:6px;}
+.viewer-text{white-space:pre-wrap;font-size:12.5px;line-height:1.65;color:var(--text2);font-family:var(--mono);}
 .viewer-iframe{width:100%;height:70vh;border:none;border-radius:12px;background:var(--surface2);}
 
-.mobile-menu-btn{
-  display:none;align-items:center;justify-content:center;
-  width:34px;height:34px;border-radius:9px;
-  border:1px solid var(--border);background:var(--surface);color:var(--text2);
-  cursor:pointer;transition:all 0.12s;
-}
-.mobile-menu-btn:hover{background:var(--surface2);color:var(--text);}
+/* ── Sidebar backdrop ── */
 .sidebar-backdrop{
   position:fixed;inset:0;z-index:400;
-  background:rgba(6,9,14,0.62);backdrop-filter:blur(2px);
+  background:rgba(0,0,0,0.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  animation:fade-in 0.15s ease;
 }
 
-@media (max-width: 900px){
+/* ── Bottom nav (mobile only) ── */
+.bottom-nav{display:none;}
+
+/* ── FAB (mobile only) ── */
+.fab{display:none;}
+
+/* ── Selection sheet (mobile only) ── */
+.selection-sheet{display:none;}
+
+/* ── Mobile ── */
+@media(max-width:900px){
   .app{position:relative;}
+
   .sidebar{
     position:fixed;left:0;top:0;bottom:0;
-    width:min(78vw,320px);
+    width:min(82vw,300px);
     transform:translateX(-100%);
-    transition:transform 0.2s ease;
-    z-index:500;border-right:1px solid var(--border2);
+    transition:transform 0.26s cubic-bezier(0.4,0,0.2,1);
+    z-index:500;
   }
-  .sidebar.open{transform:translateX(0);box-shadow:0 16px 40px rgba(0,0,0,0.45);}
+  .sidebar.open{transform:translateX(0);box-shadow:20px 0 60px rgba(0,0,0,0.5);}
+
   .main-area{width:100%;}
-  .topbar{height:auto;padding:10px 12px;flex-wrap:wrap;gap:8px;}
+
+  .topbar{
+    height:auto;padding:10px 12px;flex-wrap:wrap;gap:8px;
+    position:sticky;top:0;
+  }
   .mobile-menu-btn{display:flex;}
   .breadcrumb{order:1;flex:1;min-width:0;}
-  .search-box{order:3;width:100%;}
+  .search-box{order:3;width:100%;border-radius:var(--r-lg);height:40px;}
   .search-box:focus-within{width:100%;}
-  .topbar-right{order:4;width:100%;justify-content:space-between;}
+  .topbar-right{order:2;gap:4px;}
   .view-toggle{display:none;}
-  .content{padding:12px;}
-  .upload-panel{padding:10px;}
-  .action-bar{gap:6px;margin-bottom:10px;}
-  .btn{height:34px;font-size:12.5px;padding:6px 11px;}
-  .btn-icon{width:34px;height:34px;}
-  .file-table .ft-head{display:none;}
+
+  .content{
+    padding:12px 12px;
+    padding-bottom:calc(14px + var(--nav-h));
+  }
+
+  /* Bigger touch targets */
+  .btn{height:40px;font-size:13px;}
+  .btn-icon{width:40px;height:40px;}
+
+  /* File rows */
+  .ft-row{grid-template-columns:1fr 36px;min-height:62px;padding:0 12px;}
+  .ft-head{display:none;}
   .file-table .cell-mono{display:none;}
-  .ft-row{padding:10px 12px;}
-  .grid-card{min-height:130px;padding:12px;}
-  .grid-name{font-size:12.5px;}
-  .grid-meta{font-size:11px;}
-  .toast-shelf{left:50%;transform:translateX(-50%);right:auto;bottom:14px;}
-  .drop-card{padding:28px 24px;}
-  .viewer-card{width:96vw;max-height:90vh;}
-  .viewer-head{flex-wrap:wrap;}
-  .viewer-actions{width:100%;justify-content:flex-end;}
+  .item-name{font-size:14px;}
+
+  /* Grid */
+  .file-grid{grid-template-columns:repeat(3,1fr);gap:8px;}
+  .grid-card{padding:14px 8px 10px;}
+  .grid-icon{width:46px;height:46px;border-radius:12px;margin-bottom:8px;}
+  .grid-name{font-size:11.5px;}
+
+  /* ── Bottom nav ── */
+  .bottom-nav{
+    display:flex;
+    position:fixed;bottom:0;left:0;right:0;
+    height:var(--nav-h);
+    background:rgba(15,15,20,0.94);
+    backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    border-top:1px solid var(--border2);
+    align-items:flex-start;justify-content:space-around;
+    padding:8px 8px 0;
+    z-index:200;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .bn-item{
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:6px 14px 0;
+    border:none;background:none;cursor:pointer;
+    color:var(--muted);transition:color 0.15s;
+    min-width:56px;
+  }
+  .bn-item.active{color:var(--accent);}
+  .bn-item-icon{
+    width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+    border-radius:8px;transition:background 0.15s;
+  }
+  .bn-item.active .bn-item-icon{background:var(--accent-dim);}
+  .bn-item-label{font-size:10px;font-weight:600;letter-spacing:0.01em;}
+
+  /* ── FAB ── */
+  .fab{
+    display:flex;
+    position:fixed;
+    bottom:calc(var(--nav-h) + 16px);right:16px;
+    width:56px;height:56px;border-radius:18px;
+    background:var(--accent);color:#fff;border:none;
+    cursor:pointer;
+    align-items:center;justify-content:center;
+    box-shadow:0 8px 28px var(--accent-glow),0 4px 12px rgba(0,0,0,0.3);
+    z-index:199;transition:all 0.15s;
+  }
+  .fab:active{transform:scale(0.9);box-shadow:0 4px 16px var(--accent-glow);}
+  .fab svg{pointer-events:none;}
+
+  /* Hide upload button on mobile (FAB replaces it) */
+  .upload-btn-desktop{display:none!important;}
+
+  /* ── Selection sheet ── */
+  .selection-sheet{
+    display:flex;
+    position:fixed;
+    bottom:var(--nav-h);left:0;right:0;
+    background:rgba(20,20,28,0.97);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-top:1px solid var(--border2);
+    padding:10px 14px 12px;
+    flex-direction:column;gap:8px;
+    z-index:195;
+    box-shadow:0 -8px 32px rgba(0,0,0,0.35);
+    animation:sheet-up 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes sheet-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .ss-header{display:flex;align-items:center;justify-content:space-between;}
+  .ss-count{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.01em;}
+  .ss-close{background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);}
+  .ss-actions{display:flex;gap:8px;}
+  .ss-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;
+    padding:10px 6px;border:1px solid var(--border);
+    border-radius:var(--r-lg);background:var(--surface);
+    cursor:pointer;color:var(--text2);font-size:10.5px;font-weight:600;
+    font-family:var(--font);transition:all 0.12s;
+  }
+  .ss-btn:hover{background:var(--surface2);color:var(--text);}
+  .ss-btn.danger:hover{background:var(--red-dim);color:var(--red);border-color:rgba(240,90,90,0.3);}
+  .ss-btn-icon{display:flex;align-items:center;justify-content:center;}
+
+  /* Action bar: hide selection buttons (bottom sheet handles them) */
+  .action-bar .btn{display:none;}
+  .action-bar .btn.keep-mobile{display:inline-flex;}
+
+  /* Toast position */
+  .toast-shelf{left:50%;transform:translateX(-50%);right:auto;bottom:calc(var(--nav-h) + 14px);}
+  .toast{min-width:280px;}
+
+  /* Viewer bottom sheet */
+  .viewer-overlay{align-items:flex-end;padding:0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+  .viewer-card{
+    width:100%;max-width:100%;max-height:92dvh;
+    border-radius:var(--r-2xl) var(--r-2xl) 0 0;
+    animation:sheet-up 0.26s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  .drop-card{padding:36px 40px;}
 }
 
-@media (max-width: 640px){
-  .search-box{height:36px;}
-  .logo-text{font-size:14px;}
-  .logo-sub{font-size:9px;}
-  .nav-item{font-size:12.5px;}
-  .grid-card{min-height:120px;}
-  .grid-icon{width:44px;height:44px;}
-  .ab-pill{font-size:10.5px;}
-  .upload-item{grid-template-columns:1fr;}
-  .upload-status{text-align:left;}
+@media(max-width:640px){
+  .file-grid{grid-template-columns:repeat(3,1fr);gap:6px;}
+  .grid-card{padding:12px 6px 8px;}
+  .grid-icon{width:40px;height:40px;border-radius:10px;}
+  .grid-name{font-size:11px;}
+  .topbar{padding:8px 10px;gap:6px;}
+  .fab{bottom:calc(var(--nav-h) + 14px);right:14px;width:52px;height:52px;border-radius:16px;}
+  .content{padding:10px 10px;padding-bottom:calc(14px + var(--nav-h));}
+  .drop-card{padding:28px 24px;}
   .viewer-img{max-height:60vh;}
 }
 `;
@@ -1176,6 +1385,7 @@ export default function App() {
         ? "Loading…"
         : "Connected";
 
+
   return (
     <>
       <style>{CSS}</style>
@@ -1198,118 +1408,67 @@ export default function App() {
             <div className="logo-mark">
               <div className="logo-icon">{I.cloud()}</div>
               <div>
-                <div className="logo-text">
-                  Jr<span>Cloud</span>
-                </div>
+                <div className="logo-text">Jr<span>Cloud</span></div>
                 <div className="logo-sub">personal github drive</div>
               </div>
             </div>
           </div>
 
           <nav className="sidebar-nav">
-            <div className="nav-label">Storage</div>
+            <div className="nav-section-label">Storage</div>
             <button className="nav-item active" onClick={() => navTo(0)}>
-              <span className="nav-item-icon" style={{ color: "var(--accent)" }}>
-                {I.folder()}
-              </span>
+              <span className="nav-item-icon" style={{ color: "var(--accent)" }}>{I.folder()}</span>
               My Drive
             </button>
             <button className="nav-item" style={{ opacity: 0.35, cursor: "default" }} disabled>
-              <span className="nav-item-icon" style={{ color: "var(--muted)" }}>
+              <span className="nav-item-icon">
                 <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-                  <circle cx="10" cy="10" r="7" />
-                  <path d="M10 6v4l2.5 2" />
+                  <circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2"/>
                 </svg>
               </span>
               Recent
             </button>
             <button className="nav-item" style={{ opacity: 0.35, cursor: "default" }} disabled>
-              <span className="nav-item-icon" style={{ color: "var(--muted)" }}>
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-                  <path d="M5 7h10l-1 9H6L5 7zM3 7h14M8 7V5h4v2" />
-                </svg>
-              </span>
+              <span className="nav-item-icon">{I.trash()}</span>
               Trash
             </button>
 
-            <div className="nav-label" style={{ marginTop: 10 }}>Quick Access</div>
-            {(path.length > 0 ? path : []).map((seg, i) => (
-              <button key={seg + i} className="nav-item" onClick={() => navTo(i + 1)}>
-                <span className="nav-item-icon" style={{ color: "var(--muted)" }}>
-                  {I.folder("var(--muted)")}
-                </span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{seg}</span>
-              </button>
-            ))}
-            {path.length === 0 ? (
-              <div style={{ fontSize: 11.5, color: "var(--muted)", padding: "4px 8px" }}>
-                No subfolders opened
-              </div>
+            {path.length > 0 ? (
+              <>
+                <div className="nav-section-label" style={{ marginTop: 8 }}>Quick Access</div>
+                {path.map((seg, i) => (
+                  <button key={seg + i} className="nav-item" onClick={() => navTo(i + 1)}>
+                    <span className="nav-item-icon" style={{ color: "var(--muted)" }}>
+                      {I.folder("var(--muted)")}
+                    </span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{seg}</span>
+                  </button>
+                ))}
+              </>
             ) : null}
           </nav>
 
           <div className="sidebar-bottom">
-            <div className="status-card" style={{ marginBottom: 8 }}>
-              <div className="status-row" style={{ justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      position: "relative",
-                    }}
-                  >
-                    <svg width="48" height="48" viewBox="0 0 48 48">
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="18"
-                        stroke="var(--surface3)"
-                        strokeWidth="6"
-                        fill="none"
-                      />
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="18"
-                        stroke="var(--accent)"
-                        strokeWidth="6"
-                        fill="none"
-                        strokeDasharray={`${Math.round(2 * Math.PI * 18 * repoUsagePct / 100)} ${Math.round(2 * Math.PI * 18)}`}
-                        strokeLinecap="round"
-                        transform="rotate(-90 24 24)"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="logo-text" style={{ fontSize: 12, fontWeight: 600 }}>
-                      Storage
-                    </div>
-                    <div className="logo-sub" style={{ fontSize: 10 }}>
-                      {formatBytes(repoSize)} / 5 GB
-                    </div>
-                  </div>
-                </div>
-                <div className="status-name" style={{ fontSize: 12 }}>
-                  {repoUsagePct}%
-                </div>
+            <div className="storage-widget">
+              <div className="storage-row">
+                <span className="storage-label">Storage</span>
+                <span className="storage-pct">{repoUsagePct}%</span>
               </div>
-              {repoSizeError ? (
-                <div className="logo-sub" style={{ color: "var(--red)", marginTop: 6 }}>
-                  {repoSizeError}
-                </div>
-              ) : null}
+              <div className="storage-track">
+                <div className="storage-fill" style={{ width: `${repoUsagePct}%` }} />
+              </div>
+              <div className="storage-meta">
+                {repoSizeError
+                  ? <span style={{ color: "var(--red)" }}>{repoSizeError}</span>
+                  : <>{formatBytes(repoSize)}<span style={{ color: "var(--muted2)" }}> / 5 GB used</span></>}
+              </div>
             </div>
-            <div className="status-card">
-              <div className="status-row">
-                <div className="status-dot" />
-                <div className="status-name">{statusText}</div>
-              </div>
-              <div className="status-repo">
-                {GitInfo.content_repo
-                  ? `${GitInfo.content_owner}/${GitInfo.content_repo}`
-                  : "github.com"}
-              </div>
+            <div className="status-pill">
+              <div className="status-dot" />
+              <span className="status-text">{statusText}</span>
+              <span className="status-repo">
+                {GitInfo.content_repo ? `${GitInfo.content_owner}/${GitInfo.content_repo}` : "github.com"}
+              </span>
             </div>
           </div>
         </aside>
@@ -1318,20 +1477,13 @@ export default function App() {
         <div
           className="main-area"
           onDragEnter={onDragEnter}
-          onDragOver={(e) => {
-            if (isFileDrag(e)) e.preventDefault();
-          }}
+          onDragOver={(e) => { if (isFileDrag(e)) e.preventDefault(); }}
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
           {/* Topbar */}
           <div className="topbar">
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setMobileNav(true)}
-              aria-label="Open sidebar"
-              type="button"
-            >
+            <button className="mobile-menu-btn" onClick={() => setMobileNav(true)} aria-label="Open menu" type="button">
               {I.menu()}
             </button>
             <nav className="breadcrumb">
@@ -1351,21 +1503,14 @@ export default function App() {
             <div className="search-box">
               <span style={{ color: "var(--muted)", flexShrink: 0 }}>{I.search()}</span>
               <input
-                placeholder="Search…"
+                placeholder="Search files…"
                 value={query}
                 onChange={(e) => setQuery(e.currentTarget.value)}
               />
               {query ? (
                 <button
                   onClick={() => setQuery("")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--muted)",
-                    display: "flex",
-                    padding: 0,
-                  }}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", display: "flex", padding: 0 }}
                 >
                   {I.x()}
                 </button>
@@ -1374,26 +1519,14 @@ export default function App() {
 
             <div className="topbar-right">
               <div className="view-toggle">
-                <button
-                  className={`vt-btn${view === "list" ? " active" : ""}`}
-                  onClick={() => setView("list")}
-                  title="List view"
-                >
-                  {I.list()}
-                </button>
-                <button
-                  className={`vt-btn${view === "grid" ? " active" : ""}`}
-                  onClick={() => setView("grid")}
-                  title="Grid view"
-                >
-                  {I.grid()}
-                </button>
+                <button className={`vt-btn${view === "list" ? " active" : ""}`} onClick={() => setView("list")} title="List view">{I.list()}</button>
+                <button className={`vt-btn${view === "grid" ? " active" : ""}`} onClick={() => setView("grid")} title="Grid view">{I.grid()}</button>
               </div>
               <button className="btn btn-soft" onClick={handleNewFolder} disabled={!configReady || busy}>
                 {I.newFolder()} New folder
               </button>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary upload-btn-desktop"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!configReady || busy}
               >
@@ -1405,25 +1538,16 @@ export default function App() {
           {/* Content */}
           <div className="content">
             {error ? (
-              <div className="error-bar">
-                {I.info()}
-                <span>{error}</span>
-              </div>
+              <div className="error-bar">{I.info()}<span>{error}</span></div>
             ) : null}
 
             {uploads.length > 0 ? (
               <div className="upload-panel">
                 <div className="upload-head">
                   <div className="upload-title">Uploads</div>
-                  <div className="upload-count">
-                    {activeUploads.length} active · {uploads.length} total
-                  </div>
+                  <div className="upload-count">{activeUploads.length} active · {uploads.length} total</div>
                   <div style={{ marginLeft: "auto" }}>
-                    <button
-                      className="btn btn-ghost"
-                      onClick={clearFinishedUploads}
-                      disabled={activeUploads.length === uploads.length}
-                    >
+                    <button className="btn btn-ghost" onClick={clearFinishedUploads} disabled={activeUploads.length === uploads.length}>
                       Clear finished
                     </button>
                   </div>
@@ -1438,11 +1562,7 @@ export default function App() {
                         </div>
                       </div>
                       <div className="upload-status">
-                        {u.status === "done"
-                          ? "Done"
-                          : u.status === "error"
-                            ? "Failed"
-                            : `${Math.round(u.progress)}%`}
+                        {u.status === "done" ? "Done" : u.status === "error" ? "Failed" : `${Math.round(u.progress)}%`}
                       </div>
                     </div>
                   ))}
@@ -1452,49 +1572,30 @@ export default function App() {
 
             {/* Action bar */}
             <div className="action-bar">
-              <span className="ab-pill">
-                {filtered.length} item{filtered.length !== 1 ? "s" : ""}
-              </span>
+              <span className="ab-pill">{filtered.length} item{filtered.length !== 1 ? "s" : ""}</span>
               {selected.size > 0 ? (
                 <>
                   <div className="ab-sep" />
                   <span className="ab-pill accent">{selected.size} selected</span>
-                  {selected.size === 1
-                    ? (() => {
-                        const only = Array.from(selected)[0];
-                        const item = itemMap.get(only);
-                        return item?.type === "file" ? (
-                          <>
-                            <button className="btn btn-ghost" onClick={() => viewFile(item)} disabled={busy}>
-                              {I.view()} View
-                            </button>
-                            <button className="btn btn-ghost" onClick={() => downloadFile(item)} disabled={busy}>
-                              {I.download()} Download
-                            </button>
-                          </>
-                        ) : null;
-                      })()
-                    : null}
-                  <button className="btn btn-danger" onClick={handleDelete} disabled={busy}>
-                    {I.trash()} Delete
-                  </button>
+                  {selected.size === 1 ? (() => {
+                    const only = Array.from(selected)[0];
+                    const item = itemMap.get(only);
+                    return item?.type === "file" ? (
+                      <>
+                        <button className="btn btn-ghost" onClick={() => viewFile(item)} disabled={busy}>{I.view()} View</button>
+                        <button className="btn btn-ghost" onClick={() => downloadFile(item)} disabled={busy}>{I.download()} Download</button>
+                      </>
+                    ) : null;
+                  })() : null}
+                  <button className="btn btn-danger" onClick={handleDelete} disabled={busy}>{I.trash()} Delete</button>
                   {path.length > 0 ? (
-                    <button className="btn btn-ghost" onClick={handleMoveUp} disabled={busy}>
-                      {I.moveUp()} Move up
-                    </button>
+                    <button className="btn btn-ghost" onClick={handleMoveUp} disabled={busy}>{I.moveUp()} Move up</button>
                   ) : null}
-                  <button className="btn btn-ghost" onClick={clearSelection}>
-                    {I.x()} Deselect
-                  </button>
+                  <button className="btn btn-ghost" onClick={clearSelection}>{I.x()} Deselect</button>
                 </>
               ) : null}
               <div className="ab-space" />
-              <button
-                className="btn btn-icon btn-ghost"
-                onClick={load}
-                disabled={loading || busy}
-                title="Refresh"
-              >
+              <button className="btn btn-icon btn-ghost keep-mobile" onClick={load} disabled={loading || busy} title="Refresh">
                 {I.refresh()}
               </button>
             </div>
@@ -1503,23 +1604,14 @@ export default function App() {
             {loading ? (
               <div className="file-table">
                 <div className="ft-head">
-                  <span>Name</span>
-                  <span>Size</span>
-                  <span>Type</span>
-                  <span />
+                  <span>Name</span><span>Size</span><span>Type</span><span />
                 </div>
                 {[1, 2, 3, 4, 5].map((n, i) => (
                   <div key={`sk-${n}`} className="ft-row" style={{ cursor: "default" }}>
                     <div className="name-cell">
-                      <div
-                        className="skeleton"
-                        style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0 }}
-                      />
+                      <div className="skeleton" style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          className="skeleton"
-                          style={{ height: 11, width: 100 + i * 22, marginBottom: 6 }}
-                        />
+                        <div className="skeleton" style={{ height: 11, width: 100 + i * 24, marginBottom: 6 }} />
                         <div className="skeleton" style={{ height: 9, width: 44 }} />
                       </div>
                     </div>
@@ -1534,10 +1626,7 @@ export default function App() {
             {!loading && view === "list" ? (
               <div className="file-table">
                 <div className="ft-head">
-                  <span>Name</span>
-                  <span>Size</span>
-                  <span>Type</span>
-                  <span />
+                  <span>Name</span><span>Size</span><span>Type</span><span />
                 </div>
                 {filtered.length > 0 ? (
                   [...folders, ...files].map((item) => {
@@ -1560,25 +1649,16 @@ export default function App() {
                           <div className={`icon-wrap ${item.type === "folder" ? "icon-folder" : "icon-file"}`}>
                             {item.type === "folder" ? I.folder() : null}
                             {item.type === "file" ? (
-                              <>
-                                {I.file()}
-                                {ext ? (
-                                  <div className="ext-pip" style={{ background: extColor(item.name) }} />
-                                ) : null}
-                              </>
+                              <>{I.file()}{ext ? <div className="ext-pip" style={{ background: extColor(item.name) }} /> : null}</>
                             ) : null}
                           </div>
                           <div style={{ minWidth: 0 }}>
                             <div className="item-name">{item.name}</div>
-                            <div className="item-sub">
-                              {item.type === "folder" ? "folder" : ext ? `.${ext}` : "file"}
-                            </div>
+                            <div className="item-sub">{item.type === "folder" ? "folder" : ext ? `.${ext}` : "file"}</div>
                           </div>
                         </div>
                         <div className="cell-mono">{formatBytes(item.size)}</div>
-                        <div className="cell-mono" style={{ color: "var(--muted2)" }}>
-                          {item.type === "folder" ? "Dir" : "File"}
-                        </div>
+                        <div className="cell-mono" style={{ color: "var(--muted2)" }}>{item.type === "folder" ? "Dir" : "File"}</div>
                         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
                           {sel ? <div className="sel-check">{I.check()}</div> : null}
                         </div>
@@ -1629,25 +1709,12 @@ export default function App() {
                                 <path d="M11 3v5h5" />
                               </svg>
                               {ext ? (
-                                <div
-                                  style={{
-                                    position: "absolute",
-                                    bottom: -3,
-                                    right: -3,
-                                    width: 10,
-                                    height: 10,
-                                    borderRadius: "50%",
-                                    background: extColor(item.name),
-                                    border: "2px solid var(--surface)",
-                                  }}
-                                />
+                                <div style={{ position: "absolute", bottom: -3, right: -3, width: 10, height: 10, borderRadius: "50%", background: extColor(item.name), border: "2px solid var(--surface)" }} />
                               ) : null}
                             </>
                           ) : null}
                         </div>
-                        <div className="grid-name" title={item.name}>
-                          {item.name}
-                        </div>
+                        <div className="grid-name" title={item.name}>{item.name}</div>
                         <div className="grid-meta">{item.type === "folder" ? "folder" : formatBytes(item.size)}</div>
                       </button>
                     );
@@ -1665,7 +1732,94 @@ export default function App() {
         </div>
       </div>
 
-      {/* Drag overlay */}
+      {/* ── Mobile bottom nav ── */}
+      <nav className="bottom-nav">
+        <button className="bn-item active" onClick={() => navTo(0)}>
+          <span className="bn-item-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M3 6a2 2 0 012-2h3l2 2h7a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
+            </svg>
+          </span>
+          <span className="bn-item-label">Drive</span>
+        </button>
+        <button className="bn-item" disabled style={{ opacity: 0.3 }}>
+          <span className="bn-item-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.5 2"/>
+            </svg>
+          </span>
+          <span className="bn-item-label">Recent</span>
+        </button>
+        <button className="bn-item" disabled style={{ opacity: 0.3 }}>
+          <span className="bn-item-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M5 7h10l-1 9H6L5 7zM3 7h14M8 7V5h4v2"/>
+            </svg>
+          </span>
+          <span className="bn-item-label">Trash</span>
+        </button>
+        <button className="bn-item" onClick={() => setMobileNav(true)}>
+          <span className="bn-item-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <circle cx="10" cy="10" r="7"/>
+              <path d="M10 8v.01M10 10v4"/>
+            </svg>
+          </span>
+          <span className="bn-item-label">More</span>
+        </button>
+      </nav>
+
+      {/* ── FAB (mobile upload) ── */}
+      <button
+        className="fab"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={!configReady || busy}
+        aria-label="Upload files"
+      >
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <path d="M10 13V4M6 8l4-4 4 4M4 16h12"/>
+        </svg>
+      </button>
+
+      {/* ── Selection bottom sheet (mobile) ── */}
+      {selected.size > 0 ? (
+        <div className="selection-sheet">
+          <div className="ss-header">
+            <span className="ss-count">{selected.size} selected</span>
+            <button className="ss-close" onClick={clearSelection}>{I.x()}</button>
+          </div>
+          <div className="ss-actions">
+            {selected.size === 1 ? (() => {
+              const only = Array.from(selected)[0];
+              const item = itemMap.get(only);
+              return item?.type === "file" ? (
+                <>
+                  <button className="ss-btn" onClick={() => viewFile(item)} disabled={busy}>
+                    <span className="ss-btn-icon">{I.view()}</span>
+                    View
+                  </button>
+                  <button className="ss-btn" onClick={() => downloadFile(item)} disabled={busy}>
+                    <span className="ss-btn-icon">{I.download()}</span>
+                    Download
+                  </button>
+                </>
+              ) : null;
+            })() : null}
+            {path.length > 0 ? (
+              <button className="ss-btn" onClick={handleMoveUp} disabled={busy}>
+                <span className="ss-btn-icon">{I.moveUp()}</span>
+                Move up
+              </button>
+            ) : null}
+            <button className="ss-btn danger" onClick={handleDelete} disabled={busy}>
+              <span className="ss-btn-icon" style={{ color: "var(--red)" }}>{I.trash()}</span>
+              Delete
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Drag overlay ── */}
       {dragging ? (
         <div className="drop-overlay">
           <div className="drop-card">
@@ -1676,7 +1830,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {/* Viewer */}
+      {/* ── Viewer ── */}
       {viewer.open ? (
         <div className="viewer-overlay" onClick={closeViewer}>
           <div className="viewer-card" onClick={(e) => e.stopPropagation()}>
@@ -1684,18 +1838,12 @@ export default function App() {
               <div className="viewer-title">{viewer.item?.name ?? "Preview"}</div>
               <div className="viewer-actions">
                 {viewer.item?.type === "file" ? (
-                  <button className="btn btn-ghost" onClick={() => viewFile(viewer.item!)}>
-                    {I.view()} Refresh
-                  </button>
+                  <button className="btn btn-ghost" onClick={() => viewFile(viewer.item!)}>{I.view()} Refresh</button>
                 ) : null}
                 {viewer.item?.type === "file" ? (
-                  <button className="btn btn-ghost" onClick={() => downloadFile(viewer.item!)}>
-                    {I.download()} Download
-                  </button>
+                  <button className="btn btn-ghost" onClick={() => downloadFile(viewer.item!)}>{I.download()} Download</button>
                 ) : null}
-                <button className="btn btn-ghost" onClick={closeViewer}>
-                  {I.x()} Close
-                </button>
+                <button className="btn btn-ghost" onClick={closeViewer}>{I.x()} Close</button>
               </div>
             </div>
             <div className="viewer-body">
@@ -1721,7 +1869,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {/* Toasts */}
+      {/* ── Toasts ── */}
       <div className="toast-shelf">
         {toasts.map((t) => (
           <div key={t.id} className={`toast ${t.kind}`}>
