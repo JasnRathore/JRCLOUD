@@ -1,0 +1,49 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --base: 34 45% 96%;
+  --surface: 30 30% 99%;
+  --surface-2: 30 18% 92%;
+  --text: 215 28% 12%;
+  --muted: 215 14% 40%;
+  --accent: 196 78% 42%;
+  --accent-2: 16 90% 55%;
+  --ring: 196 78% 42%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  color: hsl(var(--text));
+  background:
+    radial-gradient(1000px circle at 10% -10%, hsl(var(--accent) / 0.18), transparent 55%),
+    radial-gradient(900px circle at 90% 5%, hsl(var(--accent-2) / 0.16), transparent 60%),
+    linear-gradient(180deg, hsl(var(--base)), hsl(var(--surface)) 65%, hsl(var(--surface-2)) 100%);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: hsl(var(--accent) / 0.25);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

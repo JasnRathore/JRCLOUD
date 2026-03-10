@@ -1,0 +1,2 @@
+nix-shell -p pkg-config glib gtk3 webkitgtk_4_1 librsvg cairo pango gdk-pixbuf dbus libclang --run "npm run tauri dev"
+
