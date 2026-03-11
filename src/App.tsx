@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  MagnifyingGlass, Folder, File, UploadSimple, FolderPlus,
+  Trash, ArrowUp, ArrowClockwise, CaretRight, CaretLeft, Check, X,
+  SquaresFour, Rows, DownloadSimple, Eye, Info, Clock, Star,
+  HardDrives, DotsThree, Plus, CloudArrowUp,
+} from "@phosphor-icons/react";
+import {
   GitInfo,
   createGitHubFolder,
   deleteGitHubPath,
@@ -21,7 +27,6 @@ type Item = {
   sha: string;
   downloadUrl?: string | null;
 };
-
 type Toast = { id: number; message: string; kind: "info" | "success" | "error" };
 type UploadItem = {
   id: string;
@@ -31,7 +36,6 @@ type UploadItem = {
   status: "queued" | "uploading" | "done" | "error";
   message?: string;
 };
-
 type ViewerState = {
   open: boolean;
   item?: Item;
@@ -55,488 +59,687 @@ const formatBytes = (v: number) => {
   const n = v / Math.pow(1024, i);
   return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${s[i]}`;
 };
-
 const extOf = (name: string) =>
   name.includes(".") ? name.split(".").pop()!.toLowerCase() : "";
 
-const EXT_COLOR: Record<string, string> = {
-  pdf: "#f87171",
-  md: "#60a5fa",
-  txt: "#a3e635",
-  docx: "#34d399",
-  xlsx: "#4ade80",
-  pptx: "#fb923c",
-  jpg: "#e879f9",
-  jpeg: "#e879f9",
-  png: "#e879f9",
-  gif: "#e879f9",
-  svg: "#e879f9",
-  mp4: "#f472b6",
-  mov: "#f472b6",
-  zip: "#fbbf24",
-  sketch: "#fb923c",
-  ts: "#38bdf8",
-  tsx: "#38bdf8",
-  js: "#facc15",
-  jsx: "#facc15",
-  json: "#fcd34d",
-  bin: "#94a3b8",
+const EXT_META: Record<string, { color: string; label: string }> = {
+  pdf: { color: "#FF3B30", label: "PDF" },
+  md: { color: "#007AFF", label: "MD" },
+  txt: { color: "#34C759", label: "TXT" },
+  docx: { color: "#007AFF", label: "DOC" },
+  xlsx: { color: "#34C759", label: "XLS" },
+  pptx: { color: "#FF9500", label: "PPT" },
+  jpg: { color: "#AF52DE", label: "JPG" },
+  jpeg: { color: "#AF52DE", label: "JPG" },
+  png: { color: "#AF52DE", label: "PNG" },
+  gif: { color: "#5856D6", label: "GIF" },
+  svg: { color: "#AF52DE", label: "SVG" },
+  mp4: { color: "#FF2D55", label: "MP4" },
+  mov: { color: "#FF2D55", label: "MOV" },
+  zip: { color: "#FF9500", label: "ZIP" },
+  ts: { color: "#007AFF", label: "TS" },
+  tsx: { color: "#007AFF", label: "TSX" },
+  js: { color: "#FFCC00", label: "JS" },
+  jsx: { color: "#FFCC00", label: "JSX" },
+  json: { color: "#FF9500", label: "JSON" },
+  css: { color: "#007AFF", label: "CSS" },
+  html: { color: "#FF3B30", label: "HTML" },
 };
-const extColor = (name: string) => EXT_COLOR[extOf(name)] ?? "#94a3b8";
+const extMeta = (name: string) =>
+  EXT_META[extOf(name)] ?? { color: "#8E8E93", label: (extOf(name).toUpperCase().slice(0, 4) || "FILE") };
 
 /* ─────────────────────────────────────────
-   SVG Icons
+   Icons — Phosphor
 ───────────────────────────────────────── */
-const I = {
-  search: () => (
-    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="9" cy="9" r="5.5" />
-      <path d="M14 14l3 3" />
-    </svg>
-  ),
-  folder: (color = "var(--accent)") => (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.6">
-      <path d="M3 6a2 2 0 012-2h3l2 2h7a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
-    </svg>
-  ),
-  file: () => (
-    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--muted)" strokeWidth="1.7">
-      <path d="M6 3h5l4 4v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z" />
-      <path d="M11 3v5h5" />
-    </svg>
-  ),
-  upload: () => (
-    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M10 13V4M6 8l4-4 4 4M4 16h12" />
-    </svg>
-  ),
-  newFolder: () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M3 6a2 2 0 012-2h3l2 2h7a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
-      <path d="M10 9v4M8 11h4" />
-    </svg>
-  ),
-  trash: () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M5 7h10l-1 9H6L5 7zM3 7h14M8 7V5h4v2" />
-    </svg>
-  ),
-  moveUp: () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M10 15V5M5 10l5-5 5 5" />
-    </svg>
-  ),
-  refresh: () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 10a6 6 0 106-6H6m0 0L3 7m3-3l3 3" />
-    </svg>
-  ),
-  chevron: () => (
-    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <path d="M7 4l6 6-6 6" />
-    </svg>
-  ),
-  home: () => (
-    <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
-      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-    </svg>
-  ),
-  check: () => (
-    <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <path d="M4 10l5 5 7-7" />
-    </svg>
-  ),
-  x: () => (
-    <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <path d="M5 5l10 10M15 5L5 15" />
-    </svg>
-  ),
-  grid: () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <rect x="3" y="3" width="6" height="6" rx="1" />
-      <rect x="11" y="3" width="6" height="6" rx="1" />
-      <rect x="3" y="11" width="6" height="6" rx="1" />
-      <rect x="11" y="11" width="6" height="6" rx="1" />
-    </svg>
-  ),
-  list: () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-      <path d="M4 6h12M4 10h12M4 14h12" />
-    </svg>
-  ),
-  menu: () => (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M3 5h14M3 10h14M3 15h14" />
-    </svg>
-  ),
-  download: () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M10 3v9M6 8l4 4 4-4M4 16h12" />
-    </svg>
-  ),
-  view: () => (
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M2 10s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" />
-      <circle cx="10" cy="10" r="2.5" />
-    </svg>
-  ),
-  cloud: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M17.5 19H9a7 7 0 110-14 4.5 4.5 0 014.5 4.5A4.5 4.5 0 0118 14a4 4 0 01-.5 5z" />
-    </svg>
-  ),
-  info: () => (
-    <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="10" cy="10" r="7" />
-      <path d="M10 9v5M10 7v.01" />
-    </svg>
-  ),
+const Ic = {
+  search: () => <MagnifyingGlass size={14} weight="regular" />,
+  folder: () => <Folder size={17} weight="regular" />,
+  folderFill: () => <Folder size={22} weight="fill" />,
+  file: () => <File size={16} weight="regular" />,
+  upload: () => <UploadSimple size={14} weight="regular" />,
+  newFolder: () => <FolderPlus size={14} weight="regular" />,
+  trash: () => <Trash size={13} weight="regular" />,
+  moveUp: () => <ArrowUp size={13} weight="regular" />,
+  refresh: () => <ArrowClockwise size={14} weight="regular" />,
+  chevRight: () => <CaretRight size={10} weight="bold" />,
+  chevLeft: () => <CaretLeft size={16} weight="regular" />,
+  check: () => <Check size={10} weight="bold" />,
+  x: () => <X size={11} weight="bold" />,
+  grid: () => <SquaresFour size={13} weight="regular" />,
+  list: () => <Rows size={13} weight="regular" />,
+  download: () => <DownloadSimple size={13} weight="regular" />,
+  eye: () => <Eye size={13} weight="regular" />,
+  info: () => <Info size={14} weight="regular" />,
+  clock: () => <Clock size={15} weight="regular" />,
+  star: () => <Star size={15} weight="regular" />,
+  drive: () => <HardDrives size={15} weight="regular" />,
+  ellipsis: () => <DotsThree size={16} weight="fill" />,
+  plus: () => <Plus size={16} weight="regular" />,
+  icloudUp: () => <CloudArrowUp size={22} weight="regular" />,
 };
 
 /* ─────────────────────────────────────────
    CSS
 ───────────────────────────────────────── */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Figtree:wght@300;400;500;600&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root {
+  --sys-bg:       #E5E5E5;
+  --sys-sidebar:  rgba(232,232,232,0.75);
+  --sys-toolbar:  rgba(248,248,248,0.95);
+  --sys-content:  #F2F2F2;
+  --sys-white:    #FFFFFF;
+  --sys-sep:      rgba(0,0,0,0.09);
+  --sys-sep2:     rgba(0,0,0,0.055);
 
-:root{
-  --bg:#080a0f;
-  --bg2:#0d1017;
-  --surface:#111520;
-  --surface2:#161b29;
-  --surface3:#1c2235;
-  --border:rgba(255,255,255,0.055);
-  --border2:rgba(255,255,255,0.1);
-  --text:#dde3f0;
-  --text2:#8892aa;
-  --muted:#454e66;
-  --accent:#5b8df5;
-  --accent2:#7aa3ff;
-  --accent-dim:rgba(91,141,245,0.12);
-  --accent-glow:rgba(91,141,245,0.3);
-  --green:#22d3a0;
-  --green-dim:rgba(34,211,160,0.1);
-  --red:#f06060;
-  --red-dim:rgba(240,96,96,0.1);
-  --r:10px;
-  --r-lg:14px;
-  --sidebar:220px;
+  --l1: rgba(0,0,0,0.85);
+  --l2: rgba(0,0,0,0.50);
+  --l3: rgba(0,0,0,0.28);
+  --l4: rgba(0,0,0,0.14);
+
+  --tint:        #D95F7F;
+  --tint-l:      rgba(217,95,127,0.10);
+  --tint-border: rgba(217,95,127,0.25);
+
+  --green:  #34C759;
+  --red:    #FF3B30;
+  --blue:   #007AFF;
+  --fill:   rgba(120,120,128,0.12);
+  --fill2:  rgba(120,120,128,0.16);
+  --fill3:  rgba(120,120,128,0.22);
+
+  --sidebar-w: 220px;
+  --toolbar-h: 52px;
+  --vh: 100vh;
+
+  --sh-sm: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+  --sh-md: 0 4px 14px rgba(0,0,0,0.11), 0 2px 4px rgba(0,0,0,0.05);
+  --sh-lg: 0 12px 40px rgba(0,0,0,0.13), 0 4px 10px rgba(0,0,0,0.07);
+  --sh-xl: 0 24px 72px rgba(0,0,0,0.16), 0 6px 18px rgba(0,0,0,0.09);
 }
 
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;-webkit-font-smoothing:antialiased}
-::-webkit-scrollbar{width:3px;height:3px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
-
-.hidden{display:none!important}
-
-.app{display:flex;height:100vh;overflow:hidden}
-
-.sidebar{
-  width:var(--sidebar);flex-shrink:0;
-  background:var(--bg2);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;padding:0;
-}
-.sidebar-top{padding:18px 16px 16px;border-bottom:1px solid var(--border);}
-.logo-mark{display:flex;align-items:center;gap:10px;}
-.logo-icon{
-  width:30px;height:30px;
-  background:linear-gradient(135deg,var(--accent) 0%,#8b5cf6 100%);
-  border-radius:8px;display:flex;align-items:center;justify-content:center;
-  color:#fff;box-shadow:0 3px 12px rgba(91,141,245,0.4);flex-shrink:0;
-}
-.logo-text{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);}
-.logo-text span{color:var(--accent);}
-.logo-sub{font-size:9.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:0.09em;margin-top:1px;}
-
-.sidebar-nav{flex:1;padding:10px 8px;overflow-y:auto;}
-.nav-label{font-size:9.5px;font-family:'JetBrains Mono',monospace;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;padding:8px 8px 5px;}
-.nav-item{
-  display:flex;align-items:center;gap:8px;
-  padding:6px 8px;border-radius:7px;
-  font-size:13px;font-weight:500;color:var(--text2);
-  cursor:pointer;transition:all 0.12s;
-  border:none;background:none;width:100%;text-align:left;
-  margin-bottom:1px;
-}
-.nav-item:hover{background:var(--surface);color:var(--text);}
-.nav-item.active{background:var(--accent-dim);color:var(--accent);}
-.nav-item-icon{flex-shrink:0;display:flex;align-items:center;}
-
-.sidebar-bottom{padding:12px 8px;border-top:1px solid var(--border);}
-.status-card{
-  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);
-  padding:10px 12px;
-}
-.status-row{display:flex;align-items:center;gap:7px;}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s ease infinite;flex-shrink:0;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.35}}
-.status-name{font-size:11.5px;font-weight:600;color:var(--green);font-family:'JetBrains Mono',monospace;}
-.status-repo{font-size:10px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-
-.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
-
-.topbar{
-  display:flex;align-items:center;gap:10px;
-  padding:0 20px;height:54px;
-  border-bottom:1px solid var(--border);
-  background:var(--bg2);flex-shrink:0;
-}
-.breadcrumb{display:flex;align-items:center;gap:0;flex:1;min-width:0;overflow:hidden;}
-.crumb{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:4px 7px;border-radius:6px;
-  font-size:13px;font-weight:500;color:var(--text2);
-  background:none;border:none;cursor:pointer;transition:all 0.12s;white-space:nowrap;
-}
-.crumb:hover{background:var(--surface2);color:var(--text);}
-.crumb:last-child{color:var(--text);}
-.crumb-sep{color:var(--muted);padding:0;font-size:11px;user-select:none;display:flex;align-items:center;}
-
-.search-box{
-  display:flex;align-items:center;gap:8px;
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:8px;padding:0 11px;height:34px;width:220px;
-  transition:border-color 0.15s,box-shadow 0.15s,width 0.2s;
-}
-.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim);width:260px;}
-.search-box input{background:none;border:none;outline:none;color:var(--text);font-family:'Figtree',sans-serif;font-size:13px;width:100%;}
-.search-box input::placeholder{color:var(--muted);}
-
-.topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
-.view-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;padding:2px;}
-.vt-btn{width:28px;height:26px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--muted);transition:all 0.12s;border-radius:5px;}
-.vt-btn.active{background:var(--surface3);color:var(--text);}
-
-.btn{
-  display:inline-flex;align-items:center;gap:6px;
-  font-family:'Figtree',sans-serif;font-size:13px;font-weight:500;
-  border-radius:8px;padding:5px 13px;height:32px;
-  border:1px solid var(--border);background:var(--surface);color:var(--text2);
-  cursor:pointer;transition:all 0.12s;
-}
-.btn:hover:not(:disabled){background:var(--surface2);color:var(--text);}
-.btn:disabled{opacity:0.5;cursor:not-allowed;}
-.btn-primary{background:var(--accent);color:#fff;border-color:rgba(0,0,0,0.2);box-shadow:0 6px 16px rgba(91,141,245,0.25);}
-.btn-primary:hover:not(:disabled){filter:brightness(1.05);color:#fff;}
-.btn-soft{background:var(--accent-dim);color:var(--accent);border-color:rgba(91,141,245,0.2);}
-.btn-soft:hover:not(:disabled){background:rgba(91,141,245,0.18);}
-.btn-ghost{background:transparent;border-color:transparent;color:var(--text2);}
-.btn-ghost:hover:not(:disabled){background:var(--surface2);color:var(--text);}
-.btn-danger{background:transparent;color:var(--text2);border:1px solid var(--border);}
-.btn-danger:hover:not(:disabled){background:var(--red-dim);color:var(--red);border-color:rgba(240,96,96,0.25);}
-.btn-icon{width:32px;height:32px;padding:0;justify-content:center;}
-
-.content{flex:1;overflow-y:auto;padding:20px;position:relative;}
-
-.action-bar{display:flex;align-items:center;gap:7px;margin-bottom:14px;flex-wrap:wrap;}
-.ab-pill{
-  font-size:11.5px;font-family:'JetBrains Mono',monospace;
-  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
-  padding:3px 9px;color:var(--text2);
-}
-.ab-pill.accent{color:var(--accent);border-color:rgba(91,141,245,0.2);background:var(--accent-dim);}
-.ab-sep{width:1px;height:16px;background:var(--border2);}
-.ab-space{flex:1;}
-
-.error-bar{
-  display:flex;align-items:center;gap:9px;
-  background:var(--red-dim);border:1px solid rgba(240,96,96,0.2);
-  border-radius:var(--r);padding:10px 14px;margin-bottom:14px;
-  font-size:13px;color:var(--red);
+@supports (height: 100dvh) {
+  :root { --vh: 100dvh; }
 }
 
-.file-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
-.ft-head{
-  display:grid;grid-template-columns:2.4fr 88px 80px 32px;gap:8px;
-  padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface2);
+html, body, #root {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--l1);
+  background: var(--sys-bg);
 }
-.ft-head span{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+body { overflow: hidden; }
 
-.ft-row{
-  display:grid;grid-template-columns:2.4fr 88px 80px 32px;gap:8px;
-  padding:0 14px;align-items:center;height:52px;
-  background:transparent;border:none;border-bottom:1px solid var(--border);
-  cursor:pointer;transition:background 0.1s;
-  width:100%;text-align:left;position:relative;
-}
-.ft-row:last-child{border-bottom:none;}
-.ft-row:hover{background:var(--surface2);}
-.ft-row.selected{background:var(--accent-dim);}
-.ft-row.selected::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);}
-.ft-row.drop-target{background:var(--accent-dim);outline:1px dashed var(--accent);outline-offset:-2px;}
+/* macOS overlay scrollbars */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
+.sidebar-nav::-webkit-scrollbar-thumb,
+.content::-webkit-scrollbar-thumb,
+.ios-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 10px; }
 
-.name-cell{display:flex;align-items:center;gap:10px;min-width:0;}
-.icon-wrap{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;}
-.icon-folder{background:var(--accent-dim);}
-.icon-file{background:var(--surface3);}
-.ext-pip{position:absolute;bottom:-2px;right:-2px;width:9px;height:9px;border-radius:50%;border:2px solid var(--surface);}
-.item-name{font-size:13.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.item-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:1px;}
-.cell-mono{font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;}
-.sel-check{width:20px;height:20px;border-radius:5px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hidden { display: none !important; }
 
-.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
-.grid-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
-  padding:14px 10px 10px;cursor:pointer;transition:all 0.15s;text-align:center;
-  position:relative;width:100%;
-}
-.grid-card:hover{background:var(--surface2);border-color:var(--border2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
-.grid-card.selected{background:var(--accent-dim);border-color:rgba(91,141,245,0.3);}
-.grid-card.drop-target{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-dim);}
-.grid-sel-badge{
-  position:absolute;top:8px;right:8px;
-  width:16px;height:16px;border-radius:4px;background:var(--accent);
-  display:flex;align-items:center;justify-content:center;color:#fff;
-}
-.grid-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 9px;position:relative;}
-.grid-icon.fi{background:var(--accent-dim);}
-.grid-icon.di{background:var(--surface3);}
-.grid-name{font-size:11.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.grid-meta{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px;}
+/* ================================================================
+   DESKTOP — macOS Finder
+================================================================ */
+.desktop-view { display: flex; flex: 1; overflow: hidden; height: var(--vh); min-height: var(--vh); }
+.mobile-view  { display: none; }
 
-.skeleton{background:linear-gradient(90deg,var(--surface2) 0%,var(--surface3) 50%,var(--surface2) 100%);background-size:200% 100%;animation:shimmer 1.4s ease infinite;border-radius:5px;}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-.empty{padding:64px 20px;text-align:center;}
-.empty-icon{width:52px;height:52px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
-.empty p{font-size:14px;font-weight:500;color:var(--text2);}
-.empty span{font-size:12px;color:var(--muted);margin-top:4px;display:block;}
-
-.toast-shelf{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:200;pointer-events:none;}
-.toast{
-  background:var(--surface);border:1px solid var(--border);border-radius:9px;
-  padding:8px 12px;min-width:220px;max-width:320px;
-  font-size:12.5px;color:var(--text2);display:flex;align-items:center;gap:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.35);
-  animation:toastIn 0.16s ease;
-}
-.toast.success{border-color:rgba(34,211,160,0.4);color:var(--green);}
-.toast.error{border-color:rgba(240,96,96,0.4);color:var(--red);}
-.toast .ti{width:16px;height:16px;display:flex;align-items:center;justify-content:center;}
-.toast.success .ti{color:var(--green);} 
-.toast.error .ti{color:var(--red);} 
-.toast.info .ti{color:var(--accent);} 
-@keyframes toastIn{from{transform:translateX(16px);opacity:0}to{transform:none;opacity:1}}
-
-.upload-panel{
-  background:var(--surface2);border:1px solid var(--border);
-  border-radius:12px;padding:10px 12px;margin-bottom:14px;
-}
-.upload-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.upload-title{font-size:12px;font-weight:600;color:var(--text);}
-.upload-count{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
-.upload-list{display:flex;flex-direction:column;gap:8px;}
-.upload-item{display:grid;grid-template-columns:1fr 56px;gap:10px;align-items:center;}
-.upload-name{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.upload-status{font-size:11px;color:var(--muted);text-align:right;}
-.upload-bar{height:6px;background:var(--surface3);border-radius:999px;overflow:hidden;}
-.upload-bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));}
-.upload-bar.error > span{background:linear-gradient(90deg,#f87171,#fb7185);}
-.upload-row{display:flex;flex-direction:column;gap:6px;}
-
-.drop-overlay{
-  position:fixed;inset:0;z-index:100;
-  display:flex;align-items:center;justify-content:center;
-  background:rgba(8,10,15,0.8);backdrop-filter:blur(4px);
-  pointer-events:none;
-}
-.drop-card{
-  background:var(--surface3);border:2px dashed var(--accent);
-  border-radius:20px;padding:40px 60px;text-align:center;
-  animation:dropIn 0.2s ease;
-}
-@keyframes dropIn{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
-.drop-icon{font-size:36px;margin-bottom:10px;}
-.drop-title{font-size:16px;font-weight:700;color:var(--accent);font-family:'Syne',sans-serif;}
-.drop-sub{font-size:12px;color:var(--text2);margin-top:5px;}
-
-.viewer-overlay{
-  position:fixed;inset:0;z-index:300;background:rgba(5,8,14,0.7);
-  display:flex;align-items:center;justify-content:center;padding:24px;
-}
-.viewer-card{
-  background:var(--surface);border:1px solid var(--border2);border-radius:16px;
-  width:min(980px,92vw);max-height:88vh;display:flex;flex-direction:column;
-  box-shadow:0 24px 80px rgba(0,0,0,0.45);
-}
-.viewer-head{
-  display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);
-}
-.viewer-title{font-size:13px;color:var(--text);font-weight:600;}
-.viewer-body{padding:16px;overflow:auto;flex:1;}
-.viewer-img{max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto;}
-.viewer-text{white-space:pre-wrap;font-size:12.5px;line-height:1.5;color:var(--text2);font-family:'JetBrains Mono',monospace;}
-.viewer-actions{margin-left:auto;display:flex;gap:6px;}
-.viewer-iframe{width:100%;height:70vh;border:none;border-radius:12px;background:var(--surface2);}
-
-.mobile-menu-btn{
-  display:none;align-items:center;justify-content:center;
-  width:34px;height:34px;border-radius:9px;
-  border:1px solid var(--border);background:var(--surface);color:var(--text2);
-  cursor:pointer;transition:all 0.12s;
-}
-.mobile-menu-btn:hover{background:var(--surface2);color:var(--text);}
-.sidebar-backdrop{
-  position:fixed;inset:0;z-index:400;
-  background:rgba(6,9,14,0.62);backdrop-filter:blur(2px);
+/* Window chrome */
+.mac-window {
+  display: flex; flex: 1; overflow: hidden;
+  box-shadow:
+    0 0 0 0.5px rgba(0,0,0,0.20),
+    0 0 0 1px rgba(255,255,255,0.08) inset,
+    0 22px 72px rgba(0,0,0,0.30),
+    0 4px 14px rgba(0,0,0,0.13);
 }
 
-@media (max-width: 900px){
-  .app{position:relative;}
-  .sidebar{
-    position:fixed;left:0;top:0;bottom:0;
-    width:min(78vw,320px);
-    transform:translateX(-100%);
-    transition:transform 0.2s ease;
-    z-index:500;border-right:1px solid var(--border2);
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--sys-sidebar);
+  backdrop-filter: blur(60px) saturate(220%) brightness(1.04);
+  -webkit-backdrop-filter: blur(60px) saturate(220%) brightness(1.04);
+  border-right: 0.5px solid var(--sys-sep);
+  overflow: hidden; z-index: 10;
+}
+
+/* Traffic lights — 12px circles, 8px gap, 20px left */
+.sidebar-traffic { height: var(--toolbar-h); display: flex; align-items: center; padding: 0 20px; gap: 8px; flex-shrink: 0; }
+.td { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; position: relative; }
+.td::after {
+  content: ''; position: absolute;
+  top: 1px; left: 1px; right: 4px; bottom: 5px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.55) 0%, transparent 55%);
+}
+.td.cl { background: #FF5F57; box-shadow: 0 0 0 0.5px rgba(160,0,0,0.28); }
+.td.mn { background: #FEBC2E; box-shadow: 0 0 0 0.5px rgba(160,100,0,0.28); }
+.td.mx { background: #28C840; box-shadow: 0 0 0 0.5px rgba(0,120,0,0.28); }
+
+.sidebar-nav { flex: 1; padding: 6px 0 8px; overflow-y: auto; }
+.nav-section { margin-bottom: 2px; }
+.nav-sec-hd {
+  font-size: 11px; font-weight: 700; color: var(--l3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 10px 20px 2px; user-select: none;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 8px 0 20px;
+  border-radius: 7px; margin: 1px 8px;
+  font-size: 13px; font-weight: 400; color: var(--l1);
+  background: none; border: none; cursor: default;
+  width: calc(100% - 16px); text-align: left;
+  transition: background 0.08s; user-select: none; white-space: nowrap;
+}
+.nav-item:hover:not(:disabled) { background: rgba(0,0,0,0.055); }
+.nav-item.active { background: var(--tint); color: white; }
+.nav-item.active .nav-ic { color: white; }
+.nav-ic { color: var(--l3); display: flex; align-items: center; flex-shrink: 0; }
+.nav-item:hover:not(:disabled) .nav-ic { color: var(--l2); }
+.nav-item-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.nav-item:disabled { opacity: 0.32; }
+.nav-divider { height: 0.5px; background: var(--sys-sep); margin: 5px 20px; }
+
+/* Sidebar footer */
+.sidebar-foot { border-top: 0.5px solid var(--sys-sep); padding: 9px 14px 11px; }
+.storage-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.storage-label { font-size: 11px; color: var(--l2); flex: 1; }
+.storage-pct   { font-size: 11px; color: var(--l3); }
+.storage-bar   { height: 3px; background: var(--fill3); border-radius: 99px; overflow: hidden; margin-bottom: 3px; }
+.storage-fill  { height: 100%; background: var(--tint); border-radius: 99px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+.storage-cap   { font-size: 10px; color: var(--l3); }
+.status-row    { display: flex; align-items: center; gap: 5px; margin-top: 7px; }
+.status-led    { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; animation: ledpulse 2.8s ease-in-out infinite; }
+@keyframes ledpulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+.status-txt    { font-size: 10.5px; color: var(--l3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Main */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--sys-content); }
+
+/* Toolbar */
+.toolbar {
+  height: var(--toolbar-h); display: flex; align-items: center; gap: 7px; padding: 0 14px;
+  background: var(--sys-toolbar);
+  backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 0.5px solid var(--sys-sep); flex-shrink: 0; z-index: 10;
+}
+
+.toolbar-nav-btns { display: flex; gap: 0; flex-shrink: 0; }
+.toolbar-nav-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: default;
+  color: var(--l2); border-radius: 7px; transition: background 0.08s, color 0.08s;
+}
+.toolbar-nav-btn:hover:not(:disabled) { background: var(--fill); color: var(--l1); }
+.toolbar-nav-btn:active:not(:disabled) { background: var(--fill2); }
+.toolbar-nav-btn:disabled { opacity: 0.28; }
+
+/* Breadcrumb */
+.breadcrumb { display: flex; align-items: center; flex: 1; min-width: 0; overflow: hidden; }
+.crumb {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 5px; border-radius: 5px;
+  font-size: 13px; font-weight: 400; color: var(--l2);
+  background: none; border: none; cursor: default; white-space: nowrap;
+  transition: background 0.08s, color 0.08s;
+}
+.crumb:hover { background: var(--fill); color: var(--l1); }
+.crumb:last-child { color: var(--l1); font-weight: 600; }
+.crumb-sep { color: var(--l4); display: flex; align-items: center; }
+
+/* Search */
+.search-wrap { position: relative; flex-shrink: 0; }
+.search-ic { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--l3); display: flex; pointer-events: none; }
+.search-input {
+  background: var(--fill); border: none; border-radius: 7px;
+  padding: 0 28px 0 28px; height: 28px; width: 190px;
+  font-family: inherit; font-size: 13px; color: var(--l1);
+  outline: none; transition: all 0.14s;
+}
+.search-input::placeholder { color: var(--l3); }
+.search-input:focus { background: white; box-shadow: 0 0 0 3.5px rgba(217,95,127,0.22), var(--sh-sm); width: 216px; }
+.search-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--l3); border: none; cursor: default;
+  display: flex; align-items: center; justify-content: center; color: white; padding: 0;
+}
+.search-clear:hover { background: var(--l2); }
+
+.toolbar-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+
+/* macOS segmented control */
+.seg-ctrl { display: flex; background: var(--fill); border-radius: 6px; padding: 2px; gap: 1px; }
+.seg-btn {
+  width: 28px; height: 23px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: default;
+  color: var(--l2); border-radius: 4px; transition: all 0.1s;
+}
+.seg-btn.on { background: var(--sys-white); color: var(--l1); box-shadow: 0 1px 3px rgba(0,0,0,0.16), 0 0.5px 1px rgba(0,0,0,0.10); }
+
+/* Toolbar buttons */
+.tb-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: inherit; font-size: 13px; font-weight: 400;
+  border-radius: 6px; padding: 0 9px; height: 26px;
+  border: none; cursor: default; transition: all 0.08s;
+  white-space: nowrap; user-select: none;
+}
+.tb-btn:disabled { opacity: 0.36; }
+.tb-btn:active:not(:disabled) { transform: scale(0.97); filter: brightness(0.96); }
+.tb-btn-default {
+  background: var(--sys-white); color: var(--l1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.13), 0 0.5px 1px rgba(0,0,0,0.10), inset 0 0.5px 0 rgba(255,255,255,0.80);
+  border: 0.5px solid rgba(0,0,0,0.15);
+}
+.tb-btn-default:hover:not(:disabled) { background: #F3F3F3; }
+.tb-btn-tint { background: var(--tint); color: white; box-shadow: 0 1px 3px rgba(217,95,127,0.38), 0 0.5px 1px rgba(217,95,127,0.22); }
+.tb-btn-tint:hover:not(:disabled) { filter: brightness(1.07); }
+.tb-btn-ghost { background: transparent; color: var(--l2); }
+.tb-btn-ghost:hover:not(:disabled) { background: var(--fill); color: var(--l1); }
+.tb-btn-destructive { background: transparent; color: var(--red); }
+.tb-btn-destructive:hover:not(:disabled) { background: rgba(255,59,48,0.08); }
+.tb-icon-btn {
+  width: 26px; height: 26px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: default; border-radius: 6px;
+  background: none; color: var(--l2); transition: background 0.08s, color 0.08s;
+}
+.tb-icon-btn:hover:not(:disabled) { background: var(--fill); color: var(--l1); }
+.tb-icon-btn:disabled { opacity: 0.28; }
+
+/* Content */
+.content { flex: 1; overflow-y: auto; }
+
+/* Finder status bar */
+.finder-bar {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 14px;
+  border-bottom: 0.5px solid var(--sys-sep2);
+  background: var(--sys-toolbar);
+  flex-wrap: wrap; min-height: 34px;
+}
+.finder-chip { font-size: 11.5px; color: var(--l2); }
+.finder-chip.sel { color: var(--tint); font-weight: 600; }
+.finder-div { width: 0.5px; height: 13px; background: var(--sys-sep); }
+.finder-flex { flex: 1; }
+
+.error-banner {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,59,48,0.07); border-bottom: 0.5px solid rgba(255,59,48,0.15);
+  padding: 8px 14px; font-size: 13px; color: var(--red);
+}
+
+/* Upload bar */
+.upload-bar-wrap { background: var(--sys-toolbar); border-bottom: 0.5px solid var(--sys-sep); padding: 9px 14px; }
+.upload-bar-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.upload-bar-title { font-size: 12px; font-weight: 600; color: var(--l1); }
+.upload-bar-count { font-size: 11px; color: var(--l3); }
+.upload-items { display: flex; flex-direction: column; gap: 6px; }
+.upload-row { display: grid; grid-template-columns: 1fr 48px; gap: 10px; align-items: center; }
+.upload-fname { font-size: 12px; color: var(--l2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.upload-pct { font-size: 11px; color: var(--l3); text-align: right; }
+.upload-track { height: 3px; background: var(--fill2); border-radius: 99px; overflow: hidden; margin-top: 3px; }
+.upload-fill { display: block; height: 100%; background: var(--tint); border-radius: 99px; transition: width 0.22s ease; }
+.upload-track.err .upload-fill { background: var(--red); }
+.upload-col { display: flex; flex-direction: column; }
+
+/* Finder list — 28px rows (compact Finder density) */
+.finder-table { width: 100%; }
+.finder-thead {
+  display: grid; grid-template-columns: 2.8fr 90px 68px 32px;
+  padding: 3px 14px;
+  border-bottom: 0.5px solid var(--sys-sep);
+  background: var(--sys-toolbar);
+  position: sticky; top: 0; z-index: 5;
+}
+.finder-thead span { font-size: 11px; font-weight: 500; color: var(--l3); letter-spacing: 0.01em; user-select: none; }
+.finder-row {
+  display: grid; grid-template-columns: 2.8fr 90px 68px 32px;
+  padding: 0 14px; align-items: center; height: 28px;
+  background: transparent; border: none;
+  border-bottom: 0.5px solid var(--sys-sep2);
+  cursor: default; width: 100%; text-align: left;
+  transition: background 0.06s; user-select: none;
+}
+.finder-row:last-child { border-bottom: none; }
+.finder-row:hover { background: rgba(0,0,0,0.038); }
+.finder-row.selected { background: var(--tint) !important; }
+.finder-row.selected .finder-name,
+.finder-row.selected .finder-meta { color: rgba(255,255,255,0.95) !important; }
+.finder-row.selected .file-type-badge { border-color: rgba(255,255,255,0.4) !important; }
+.finder-row.drop-target { outline: 1.5px solid var(--blue); outline-offset: -1px; background: rgba(0,122,255,0.06); }
+.finder-name-cell { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.finder-file-ic { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
+.finder-file-ic.is-folder { color: var(--tint); }
+.finder-file-ic.is-file   { color: var(--l3); }
+.file-type-badge {
+  position: absolute; bottom: -2px; right: -5px;
+  font-size: 5.5px; font-weight: 700; padding: 0.5px 2px; border-radius: 2px;
+  color: white; line-height: 1.4; border: 1px solid white; letter-spacing: 0.01em;
+}
+.finder-name { font-size: 13px; color: var(--l1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.finder-meta { font-size: 11.5px; color: var(--l3); }
+.sel-check-mac { width: 16px; height: 16px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; color: var(--tint); margin-left: auto; }
+
+/* Grid */
+.finder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 2px; padding: 10px; }
+.grid-item {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 8px 6px 7px; border-radius: 6px;
+  cursor: default; background: none; border: none;
+  transition: background 0.06s; position: relative; text-align: center; user-select: none;
+}
+.grid-item:hover { background: rgba(0,0,0,0.045); }
+.grid-item.selected { background: var(--tint-l); outline: 2px solid var(--tint); outline-offset: -1px; border-radius: 6px; }
+.grid-item.drop-target { outline: 2px solid var(--blue); outline-offset: -1px; background: rgba(0,122,255,0.06); }
+.grid-item-sel { position: absolute; top: 5px; right: 5px; width: 17px; height: 17px; border-radius: 50%; background: var(--tint); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 1px 4px rgba(217,95,127,0.4); }
+.grid-file-ic { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 10px; margin-bottom: 5px; position: relative; flex-shrink: 0; }
+.grid-file-ic.is-folder { color: var(--tint); background: var(--tint-l); }
+.grid-file-ic.is-file   { color: var(--l3); background: var(--fill); }
+.grid-ext-badge { position: absolute; bottom: -2px; right: -4px; font-size: 6px; font-weight: 700; padding: 1px 3px; border-radius: 3px; color: white; line-height: 1.3; border: 1.5px solid white; }
+.grid-item-name { font-size: 11px; color: var(--l1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 86px; }
+.grid-item-sub  { font-size: 10px; color: var(--l3); margin-top: 1px; }
+
+/* Empty */
+.empty-state { padding: 56px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.empty-ic { font-size: 44px; margin-bottom: 10px; line-height: 1; opacity: 0.22; }
+.empty-title { font-size: 15px; font-weight: 600; color: var(--l1); margin-bottom: 4px; }
+.empty-sub { font-size: 13px; color: var(--l2); }
+
+/* Skeleton */
+.sk { background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.09) 50%, rgba(0,0,0,0.05) 100%); background-size: 300% 100%; animation: sk 1.6s ease-in-out infinite; border-radius: 4px; }
+@keyframes sk { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Drop overlay */
+.drop-box-wrap { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: rgba(230,230,230,0.70); backdrop-filter: blur(10px); pointer-events: none; }
+.drop-box { background: white; border: 2px dashed var(--tint-border); border-radius: 18px; padding: 40px 64px; text-align: center; box-shadow: var(--sh-xl); animation: popIn 0.18s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes popIn { from { transform: scale(0.90); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.drop-title { font-size: 17px; font-weight: 600; color: var(--tint); margin-bottom: 4px; }
+.drop-sub { font-size: 13px; color: var(--l2); }
+
+/* Viewer */
+.viewer-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.42); backdrop-filter: blur(22px) saturate(160%); display: flex; align-items: center; justify-content: center; padding: 24px; animation: fadeIn 0.14s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.viewer-win {
+  background: var(--sys-toolbar); backdrop-filter: blur(60px);
+  border: 0.5px solid rgba(0,0,0,0.20); border-radius: 12px;
+  width: min(1000px, 92vw); max-height: 88vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 30px 90px rgba(0,0,0,0.36), 0 0 0 0.5px rgba(255,255,255,0.08) inset;
+  animation: winIn 0.18s cubic-bezier(0.34,1.56,0.64,1); overflow: hidden;
+}
+@keyframes winIn { from { transform: scale(0.94) translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.viewer-titlebar { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 0.5px solid var(--sys-sep); background: var(--sys-toolbar); }
+.viewer-fname { font-size: 13px; font-weight: 600; color: var(--l1); flex: 1; text-align: center; }
+.viewer-actions-row { display: flex; gap: 6px; }
+.viewer-body { padding: 16px; overflow: auto; flex: 1; background: var(--sys-content); }
+.viewer-img { max-width: 100%; max-height: 66vh; border-radius: 10px; display: block; margin: 0 auto; box-shadow: var(--sh-lg); }
+.viewer-text { white-space: pre-wrap; font-size: 12px; line-height: 1.7; color: var(--l1); font-family: 'SF Mono','Menlo','Monaco',monospace; background: white; border-radius: 8px; padding: 16px; box-shadow: var(--sh-sm); }
+.viewer-frame { width: 100%; height: 66vh; border: none; border-radius: 8px; }
+
+/* Toasts */
+.toast-shelf { position: fixed; bottom: 18px; right: 18px; display: flex; flex-direction: column; gap: 6px; z-index: 600; pointer-events: none; }
+.toast { background: rgba(44,44,46,0.94); backdrop-filter: blur(24px); border-radius: 13px; padding: 10px 14px; min-width: 220px; max-width: 300px; font-size: 12.5px; color: white; display: flex; align-items: center; gap: 9px; box-shadow: var(--sh-lg); animation: toastIn 0.18s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes toastIn { from { transform: translateX(12px) scale(0.96); opacity: 0; } to { transform: none; opacity: 1; } }
+.toast.success .t-ic { color: #30D158; }
+.toast.error   .t-ic { color: #FF453A; }
+.toast.info    .t-ic { color: #64D2FF; }
+.t-ic { display: flex; align-items: center; flex-shrink: 0; }
+
+/* ================================================================
+   MOBILE — iOS/Android native feel
+================================================================ */
+@media (max-width: 768px) {
+  .desktop-view { display: none; }
+  .mobile-view {
+    display: flex; flex-direction: column;
+    height: var(--vh); min-height: var(--vh);
+    background: #F2F2F7; overflow: hidden;
+    /* Android status bar clearance */
+    padding-top: env(safe-area-inset-top, 28px);
   }
-  .sidebar.open{transform:translateX(0);box-shadow:0 16px 40px rgba(0,0,0,0.45);}
-  .main-area{width:100%;}
-  .topbar{height:auto;padding:10px 12px;flex-wrap:wrap;gap:8px;}
-  .mobile-menu-btn{display:flex;}
-  .breadcrumb{order:1;flex:1;min-width:0;}
-  .search-box{order:3;width:100%;}
-  .search-box:focus-within{width:100%;}
-  .topbar-right{order:4;width:100%;justify-content:space-between;}
-  .view-toggle{display:none;}
-  .content{padding:12px;}
-  .upload-panel{padding:10px;}
-  .action-bar{gap:6px;margin-bottom:10px;}
-  .btn{height:34px;font-size:12.5px;padding:6px 11px;}
-  .btn-icon{width:34px;height:34px;}
-  .file-table .ft-head{display:none;}
-  .file-table .cell-mono{display:none;}
-  .ft-row{padding:10px 12px;}
-  .grid-card{min-height:130px;padding:12px;}
-  .grid-name{font-size:12.5px;}
-  .grid-meta{font-size:11px;}
-  .toast-shelf{left:50%;transform:translateX(-50%);right:auto;bottom:14px;}
-  .drop-card{padding:28px 24px;}
-  .viewer-card{width:96vw;max-height:90vh;}
-  .viewer-head{flex-wrap:wrap;}
-  .viewer-actions{width:100%;justify-content:flex-end;}
-}
 
-@media (max-width: 640px){
-  .search-box{height:36px;}
-  .logo-text{font-size:14px;}
-  .logo-sub{font-size:9px;}
-  .nav-item{font-size:12.5px;}
-  .grid-card{min-height:120px;}
-  .grid-icon{width:44px;height:44px;}
-  .ab-pill{font-size:10.5px;}
-  .upload-item{grid-template-columns:1fr;}
-  .upload-status{text-align:left;}
-  .viewer-img{max-height:60vh;}
+  /* iOS Nav bar */
+  .ios-nav {
+    background: rgba(242,242,247,0.96);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-bottom: 0.5px solid rgba(60,60,67,0.18);
+    flex-shrink: 0; z-index: 20; position: relative;
+  }
+
+  /* Standard 44pt bar: back | center title | right (refresh only) */
+  .ios-nav-bar {
+    display: flex; align-items: center;
+    height: 44px; padding: 0 8px 0 4px; position: relative;
+  }
+  .ios-back-btn {
+    display: flex; align-items: center;
+    color: var(--tint); background: none; border: none;
+    font-size: 17px; cursor: pointer;
+    padding: 0 8px; height: 44px; min-width: 44px;
+    gap: 2px; -webkit-tap-highlight-color: transparent; white-space: nowrap; flex-shrink: 0;
+  }
+  .ios-back-label { font-size: 17px; color: var(--tint); line-height: 1; }
+  .ios-nav-center {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 17px; font-weight: 600; color: var(--l1);
+    pointer-events: none; white-space: nowrap;
+    max-width: 50vw; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ios-nav-right { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+  .ios-nav-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(120,120,128,0.16);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--tint); -webkit-tap-highlight-color: transparent;
+  }
+  .ios-nav-btn:active { opacity: 0.6; }
+
+  /* Search bar */
+  .ios-search-wrap { padding: 0 16px 8px; position: relative; }
+  .ios-search-ic { position: absolute; left: 25px; top: 50%; transform: translateY(-55%); color: var(--l3); pointer-events: none; display: flex; }
+  .ios-search {
+    width: 100%; background: rgba(120,120,128,0.12);
+    border: none; border-radius: 10px;
+    padding: 0 32px 0 32px; height: 36px;
+    font-family: inherit; font-size: 17px; color: var(--l1); outline: none;
+    -webkit-appearance: none;
+  }
+  .ios-search::placeholder { color: var(--l3); font-size: 17px; }
+  .ios-search-clear {
+    position: absolute; right: 24px; top: 50%; transform: translateY(-55%);
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(120,120,128,0.36); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: white; padding: 0;
+  }
+
+  /* Segmented control */
+  .ios-seg-wrap { padding: 0 16px 10px; display: flex; gap: 8px; align-items: center; }
+  .ios-seg { flex: 1; display: flex; background: rgba(120,120,128,0.12); border-radius: 9px; padding: 2px; }
+  .ios-seg-btn {
+    flex: 1; height: 30px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 500; color: var(--l2);
+    border-radius: 7px; transition: all 0.14s; -webkit-tap-highlight-color: transparent;
+  }
+  .ios-seg-btn.on { background: white; color: var(--l1); box-shadow: 0 1px 3px rgba(0,0,0,0.15), 0 0.5px 1px rgba(0,0,0,0.08); }
+
+  /* Scroll area */
+  .ios-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 16px; }
+
+  /* Section header */
+  .ios-section-header {
+    font-size: 13px; font-weight: 400; color: rgba(60,60,67,0.60);
+    padding: 20px 20px 7px; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  /* Inset grouped list card */
+  .ios-list {
+    background: white; border-radius: 12px;
+    margin: 0 16px 10px; overflow: hidden;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+  }
+
+  /* iOS row — 54pt min, inset separator */
+  .ios-row {
+    display: flex; align-items: center; gap: 13px;
+    padding: 10px 16px; background: white; border: none;
+    cursor: pointer; width: 100%; text-align: left; min-height: 54px;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    position: relative; transition: background 0.12s;
+  }
+  .ios-row:active { background: rgba(0,0,0,0.04); }
+  .ios-row.selected { background: rgba(217,95,127,0.07); }
+  /* Inset separator — starts after the icon (69px in) */
+  .ios-row::after {
+    content: ''; position: absolute; bottom: 0; left: 69px; right: 0;
+    height: 0.5px; background: rgba(60,60,67,0.14); pointer-events: none;
+  }
+  .ios-row:last-child::after { display: none; }
+
+  /* File icon — 40x40, 10px corner radius */
+  .ios-file-ic { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
+  .ios-file-ic.folder { background: rgba(217,95,127,0.10); color: var(--tint); }
+  .ios-file-ic.file   { background: rgba(120,120,128,0.12); color: var(--l3); }
+  .ios-file-ext { position: absolute; bottom: -2px; right: -3px; font-size: 5.5px; font-weight: 700; padding: 0.5px 2.5px; border-radius: 2.5px; color: white; line-height: 1.4; border: 1.5px solid white; }
+
+  .ios-row-text { flex: 1; min-width: 0; }
+  .ios-row-name { font-size: 17px; font-weight: 400; color: var(--l1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ios-row-sub  { font-size: 12px; color: var(--l3); margin-top: 1px; }
+  /* iOS-style thin chevron */
+  .ios-chev { color: rgba(60,60,67,0.25); flex-shrink: 0; display: flex; align-items: center; }
+  .ios-row-check { width: 26px; height: 26px; border-radius: 50%; background: var(--tint); display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+
+  /* iOS Grid — 3 columns like iOS Files */
+  .ios-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; padding: 0 16px 10px; }
+  .ios-grid-item { display: flex; flex-direction: column; align-items: center; padding: 14px 8px 11px; border-radius: 12px; cursor: pointer; background: none; border: none; text-align: center; position: relative; -webkit-tap-highlight-color: transparent; }
+  .ios-grid-item:active { background: rgba(0,0,0,0.06); }
+  .ios-grid-item.selected { background: rgba(217,95,127,0.08); outline: 2px solid var(--tint); outline-offset: -2px; border-radius: 12px; }
+  .ios-grid-ic { width: 68px; height: 68px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; position: relative; }
+  .ios-grid-ic.folder { background: rgba(217,95,127,0.10); color: var(--tint); }
+  .ios-grid-ic.file   { background: rgba(120,120,128,0.12); color: var(--l3); }
+  .ios-grid-ext { position: absolute; bottom: -2px; right: -4px; font-size: 6.5px; font-weight: 700; padding: 1px 3px; border-radius: 3.5px; color: white; border: 2px solid white; line-height: 1.3; }
+  .ios-grid-name { font-size: 12px; font-weight: 400; color: var(--l1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 88px; }
+  .ios-grid-sub  { font-size: 10.5px; color: var(--l3); margin-top: 2px; }
+  .ios-grid-sel { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 50%; background: var(--tint); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 1px 4px rgba(217,95,127,0.4); }
+
+  /* ── Bottom bar ── */
+  .ios-bottom-bar {
+    flex-shrink: 0; position: relative;
+    background: rgba(249,249,249,0.97);
+    backdrop-filter: blur(32px) saturate(180%); -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border-top: 0.5px solid rgba(60,60,67,0.18);
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    z-index: 100;
+  }
+
+  /* Floating action buttons — hover above the bar */
+  .ios-fab-group {
+    position: absolute;
+    bottom: calc(100% + 10px); right: 16px;
+    display: flex; align-items: center; gap: 8px;
+    pointer-events: all;
+  }
+
+  /* Single nav tab row */
+  .ios-tabbar {
+    display: flex; align-items: center;
+    padding: 8px 4px 6px;
+  }
+  .ios-fab {
+    width: 36px; height: 36px;
+    border-radius: 10px; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s, filter 0.12s;
+  }
+  .ios-fab:active { transform: scale(0.88); }
+  .ios-fab.upload {
+    background: var(--tint); color: white;
+    box-shadow: 0 3px 10px rgba(217,95,127,0.38), 0 1px 4px rgba(217,95,127,0.20), 0 0 0 0.5px rgba(217,95,127,0.30);
+  }
+  .ios-fab.newfolder {
+    background: white; color: var(--l2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.08);
+  }
+  .ios-fab.upload:active { filter: brightness(0.9); }
+  .ios-fab.newfolder:active { filter: brightness(0.95); }
+  .ios-tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer; padding: 2px 4px 0;
+    -webkit-tap-highlight-color: transparent; min-width: 44px;
+  }
+  .ios-tab:active { opacity: 0.7; }
+  .ios-tab-ic { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: rgba(60,60,67,0.38); }
+  .ios-tab.active .ios-tab-ic { color: var(--tint); }
+  .ios-tab-label { font-size: 10px; font-weight: 500; color: rgba(60,60,67,0.38); letter-spacing: 0.01em; }
+  .ios-tab.active .ios-tab-label { color: var(--tint); font-weight: 600; }
+
+  /* Selection action bar — replaces the bottom bar when items are selected */
+  .ios-sel-bar {
+    flex-shrink: 0;
+    background: rgba(242,242,247,0.97); backdrop-filter: blur(28px);
+    border-top: 0.5px solid rgba(60,60,67,0.18);
+    display: flex; align-items: center;
+    padding: 10px 12px; gap: 0; z-index: 99;
+    animation: selBarUp 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes selBarUp { from { transform: translateY(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+  .ios-sel-label { font-size: 13px; font-weight: 600; color: var(--l1); flex: 1; padding-left: 4px; }
+  .ios-sel-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    background: none; border: none; cursor: pointer;
+    padding: 4px 10px; color: var(--tint);
+    font-size: 10px; font-weight: 500;
+    -webkit-tap-highlight-color: transparent; min-width: 44px;
+  }
+  .ios-sel-btn:active { opacity: 0.5; }
+  .ios-sel-btn.danger { color: var(--red); }
+  .ios-sel-btn-ic { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; }
+
+  /* Drop overlay */
+  .ios-drop-wrap { position: fixed; inset: 0; z-index: 400; display: flex; align-items: center; justify-content: center; background: rgba(242,242,247,0.80); backdrop-filter: blur(10px); pointer-events: none; }
+  .ios-drop-box { background: white; border: 2px dashed var(--tint-border); border-radius: 22px; padding: 32px 48px; text-align: center; box-shadow: var(--sh-xl); animation: popIn 0.18s cubic-bezier(0.34,1.56,0.64,1); }
+
+  /* iOS viewer sheet */
+  .ios-viewer-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.38); display: flex; align-items: flex-end; animation: fadeIn 0.16s ease; }
+  .ios-viewer-sheet { background: white; border-radius: 13px 13px 0 0; width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 -4px 30px rgba(0,0,0,0.12); animation: sheetUp 0.26s cubic-bezier(0.34,1.56,0.64,1); overflow: hidden; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+  .ios-sheet-handle { width: 36px; height: 5px; border-radius: 99px; background: rgba(60,60,67,0.18); margin: 8px auto 0; flex-shrink: 0; }
+  .ios-sheet-head { display: flex; align-items: center; padding: 12px 16px 10px; border-bottom: 0.5px solid rgba(60,60,67,0.14); }
+  .ios-sheet-title { font-size: 17px; font-weight: 600; color: var(--l1); flex: 1; text-align: center; }
+  .ios-sheet-body { flex: 1; overflow: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
+  .ios-sheet-close { font-size: 17px; color: var(--tint); background: none; border: none; cursor: pointer; font-weight: 400; flex-shrink: 0; }
+
+  /* Toast / upload / error for mobile */
+  .toast-shelf { bottom: 16px; left: 16px; right: 16px; }
+  .toast { min-width: unset; width: 100%; border-radius: 14px; font-size: 15px; padding: 12px 16px; }
+  .upload-bar-wrap { margin: 0 16px 10px; border-radius: 12px; border: none; box-shadow: 0 1px 0 rgba(0,0,0,0.06); }
+  .error-banner { margin: 0 16px 10px; border-radius: 12px; border: none; }
+
+  .ios-skeleton-list { background: white; border-radius: 12px; margin: 0 16px 10px; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,0.06); }
+  .ios-skeleton-row { display: flex; align-items: center; gap: 13px; padding: 11px 16px; border-bottom: 0.5px solid rgba(60,60,67,0.10); min-height: 54px; }
+  .ios-skeleton-row:last-child { border-bottom: none; }
 }
 `;
 
 /* ─────────────────────────────────────────
-   App Component
+   App
 ───────────────────────────────────────── */
 let toastId = 0;
 
@@ -551,372 +754,181 @@ export default function App() {
   const [view, setView] = useState<"list" | "grid">("list");
   const [dragging, setDragging] = useState(false);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
-  const [lastSelected, setLastSelected] = useState<string | null>(null);
+  const [lastSel, setLastSel] = useState<string | null>(null);
   const [dragItems, setDragItems] = useState<string[]>([]);
-  const [pending, setPending] = useState<Map<string, { item: Item; ts: number }>>(
-    new Map()
-  );
+  const [pending, setPending] = useState<Map<string, { item: Item; ts: number }>>(new Map());
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [viewer, setViewer] = useState<ViewerState>({ open: false });
-  const [repoSize, setRepoSize] = useState<number>(0);
-  const [repoSizeError, setRepoSizeError] = useState<string | null>(null);
-  const [mobileNav, setMobileNav] = useState(false);
+  const [repoSize, setRepoSize] = useState(0);
+  const [mobileTab, setMobileTab] = useState<"drive" | "recent" | "shared">("drive");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
-  const uploadTimersRef = useRef<Map<string, number>>(new Map());
+  const timersRef = useRef<Map<string, number>>(new Map());
   const viewerUrlRef = useRef<string | null>(null);
 
-  const addToast = useCallback((message: string, kind: Toast["kind"] = "info") => {
+  const toast = useCallback((message: string, kind: Toast["kind"] = "info") => {
     const id = ++toastId;
-    setToasts((prev) => [...prev, { id, message, kind }]);
-    window.setTimeout(
-      () => setToasts((prev) => prev.filter((t) => t.id !== id)),
-      3500
-    );
+    setToasts(p => [...p, { id, message, kind }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3500);
   }, []);
 
-  const updateUpload = useCallback((id: string, patch: Partial<UploadItem>) => {
-    setUploads((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...patch } : item))
-    );
+  const updUpload = useCallback((id: string, patch: Partial<UploadItem>) =>
+    setUploads(p => p.map(u => u.id === id ? { ...u, ...patch } : u)), []);
+
+  const stopProg = useCallback((id: string) => {
+    const t = timersRef.current.get(id);
+    if (t) { clearInterval(t); timersRef.current.delete(id); }
   }, []);
 
-  const stopUploadProgress = useCallback((id: string) => {
-    const timer = uploadTimersRef.current.get(id);
-    if (timer) {
-      window.clearInterval(timer);
-      uploadTimersRef.current.delete(id);
-    }
-  }, []);
+  const startProg = useCallback((id: string) => {
+    stopProg(id);
+    const t = window.setInterval(() =>
+      setUploads(p => p.map(u =>
+        u.id !== id || u.status !== "uploading" ? u
+          : { ...u, progress: Math.min(90, u.progress + 3 + Math.random() * 6) }
+      )), 250);
+    timersRef.current.set(id, t);
+  }, [stopProg]);
 
-  const startUploadProgress = useCallback((id: string) => {
-    stopUploadProgress(id);
-    const timer = window.setInterval(() => {
-      setUploads((prev) =>
-        prev.map((item) => {
-          if (item.id !== id) return item;
-          if (item.status !== "uploading") return item;
-          const next = Math.min(90, item.progress + 3 + Math.random() * 6);
-          return { ...item, progress: next };
-        })
-      );
-    }, 250);
-    uploadTimersRef.current.set(id, timer);
-  }, [stopUploadProgress]);
+  const configOk = useMemo(() =>
+    !!(GitInfo.content_owner && GitInfo.content_repo && GitInfo.content_branch && GitInfo.content_token), []);
 
-  const configReady = useMemo(
-    () =>
-      !!(
-        GitInfo.content_owner &&
-        GitInfo.content_repo &&
-        GitInfo.content_branch &&
-        GitInfo.content_token
-      ),
-    []
-  );
+  const base = useMemo(() =>
+    GitInfo.user_folder ? GitInfo.user_folder.replace(/^\/+|\/+$/g, "") : "", []);
 
-  const base = useMemo(
-    () => (GitInfo.user_folder ? GitInfo.user_folder.replace(/^\/+|\/+$/g, "") : ""),
-    []
-  );
+  const resolve = useCallback((segs: string[]) =>
+    [base, ...segs].filter(Boolean).join("/"), [base]);
 
-  const resolve = useCallback(
-    (segs: string[]) => [base, ...segs].filter(Boolean).join("/"),
-    [base]
-  );
-
-  const currentPath = useMemo(() => resolve(path), [path, resolve]);
-  const breadcrumb = useMemo(() => ["/", ...path], [path]);
+  const curPath = useMemo(() => resolve(path), [path, resolve]);
+  const crumbs = useMemo(() => ["/", ...path], [path]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? items.filter((i) => i.name.toLowerCase().includes(q)) : items;
+    return q ? items.filter(i => i.name.toLowerCase().includes(q)) : items;
   }, [items, query]);
 
-  const folders = useMemo(() => filtered.filter((i) => i.type === "folder"), [filtered]);
-  const files = useMemo(() => filtered.filter((i) => i.type === "file"), [filtered]);
-  const itemMap = useMemo(() => new Map(items.map((i) => [i.path, i])), [items]);
+  const folders = useMemo(() => filtered.filter(i => i.type === "folder"), [filtered]);
+  const files = useMemo(() => filtered.filter(i => i.type === "file"), [filtered]);
   const displayed = useMemo(() => [...folders, ...files], [folders, files]);
-  const activeUploads = useMemo(
-    () => uploads.filter((u) => u.status === "queued" || u.status === "uploading"),
-    [uploads]
-  );
-  const repoUsagePct = useMemo(
-    () => Math.min(100, Math.round((repoSize / MAX_REPO_BYTES) * 100)),
-    [repoSize]
-  );
+  const imap = useMemo(() => new Map(items.map(i => [i.path, i])), [items]);
+  const activeUps = useMemo(() => uploads.filter(u => u.status === "queued" || u.status === "uploading"), [uploads]);
+  const usedPct = useMemo(() => Math.min(100, Math.round(repoSize / MAX_REPO_BYTES * 100)), [repoSize]);
 
-  const joinPath = useCallback((basePath: string, name: string) => [basePath, name].filter(Boolean).join("/"), []);
+  const jp = useCallback((a: string, b: string) => [a, b].filter(Boolean).join("/"), []);
 
-  const isInputTarget = (el: EventTarget | null) => {
+  const isInput = (el: EventTarget | null) => {
     if (!(el instanceof HTMLElement)) return false;
-    const tag = el.tagName;
-    return el.isContentEditable || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+    return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
+  };
+  const isFileDrag = (e: { dataTransfer?: DataTransfer | null }) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
+  const isInternalDrag = (e: { dataTransfer?: DataTransfer | null }) => Array.from(e.dataTransfer?.types ?? []).includes("application/x-jr-paths");
+
+  const selOnly = (p: string) => { setSelected(new Set([p])); setLastSel(p); };
+  const selRange = (from: string, to: string) => {
+    const a = displayed.findIndex(i => i.path === from);
+    const b = displayed.findIndex(i => i.path === to);
+    if (a === -1 || b === -1) { selOnly(to); return; }
+    const [s, e] = a < b ? [a, b] : [b, a];
+    setSelected(new Set(displayed.slice(s, e + 1).map(i => i.path)));
   };
 
-  const isFileDrag = (e: { dataTransfer?: DataTransfer | null }) =>
-    Array.from(e.dataTransfer?.types ?? []).includes("Files");
-
-  const isInternalDrag = (e: { dataTransfer?: DataTransfer | null }) =>
-    Array.from(e.dataTransfer?.types ?? []).includes("application/x-jrcloud-paths");
-
-  const selectOnly = (pathValue: string) => {
-    setSelected(new Set([pathValue]));
-    setLastSelected(pathValue);
-  };
-
-  const selectRange = (fromPath: string, toPath: string) => {
-    const list = displayed;
-    const a = list.findIndex((i) => i.path === fromPath);
-    const b = list.findIndex((i) => i.path === toPath);
-    if (a === -1 || b === -1) {
-      selectOnly(toPath);
-      return;
-    }
-    const [start, end] = a < b ? [a, b] : [b, a];
-    const next = new Set(list.slice(start, end + 1).map((i) => i.path));
-    setSelected(next);
-  };
-
-  const addPending = useCallback((item: Item) => {
-    setPending((prev) => {
-      const next = new Map(prev);
-      next.set(item.path, { item, ts: Date.now() });
-      return next;
-    });
-  }, []);
+  const addPending = useCallback((item: Item) =>
+    setPending(p => { const n = new Map(p); n.set(item.path, { item, ts: Date.now() }); return n; }), []);
 
   const load = useCallback(async () => {
-    if (!configReady) {
-      setError("Missing GitHub config — check your .env values.");
-      setItems([]);
-      setSelected(new Set());
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    setRepoSizeError(null);
+    if (!configOk) { setError("Missing GitHub config."); setItems([]); return; }
+    setLoading(true); setError(null);
     try {
-      const list = await listGitHubPath({
-        owner: GitInfo.content_owner,
-        repo: GitInfo.content_repo,
-        path: currentPath,
-        branch: GitInfo.content_branch,
-      });
-      const mapped = list.map((i) => ({
-        name: i.name,
-        path: i.path,
-        type: i.type === "dir" ? "folder" : "file",
-        size: i.size ?? 0,
-        sha: i.sha,
-        downloadUrl: i.download_url ?? null,
-      }));
+      const list = await listGitHubPath({ owner: GitInfo.content_owner, repo: GitInfo.content_repo, path: curPath, branch: GitInfo.content_branch });
+      const mapped: Item[] = list.map(i => ({ name: i.name, path: i.path, type: i.type === "dir" ? "folder" : "file", size: i.size ?? 0, sha: i.sha, downloadUrl: i.download_url ?? null }));
       const now = Date.now();
       const merged = [...mapped];
-      setPending((prev) => {
+      setPending(prev => {
         const next = new Map(prev);
         for (const [p, entry] of prev) {
-          if (now - entry.ts > 30000) {
-            next.delete(p);
-            continue;
-          }
-          if (merged.some((i) => i.path === p)) {
-            next.delete(p);
-            continue;
-          }
+          if (now - entry.ts > 30000) { next.delete(p); continue; }
+          if (merged.some(i => i.path === p)) { next.delete(p); continue; }
           merged.unshift(entry.item);
         }
         return next;
       });
-      setItems(merged);
-      setSelected(new Set());
-      try {
-        const size = await getGitHubRepoSize({
-          owner: GitInfo.content_owner,
-          repo: GitInfo.content_repo,
-        });
-        setRepoSize(size);
-      } catch (err) {
-        setRepoSizeError(err instanceof Error ? err.message : "Failed to read repo size.");
-      }
+      setItems(merged); setSelected(new Set());
+      try { setRepoSize(await getGitHubRepoSize({ owner: GitInfo.content_owner, repo: GitInfo.content_repo })); }
+      catch (_) { }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to load files.";
-      setError(msg);
-      setItems([]);
-      setSelected(new Set());
-      addToast(msg, "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast, configReady, currentPath]);
+      const msg = e instanceof Error ? e.message : "Failed to load.";
+      setError(msg); setItems([]); toast(msg, "error");
+    } finally { setLoading(false); }
+  }, [configOk, curPath, toast]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  useEffect(() => {
-    return () => {
-      for (const timer of uploadTimersRef.current.values()) {
-        window.clearInterval(timer);
-      }
-      uploadTimersRef.current.clear();
-      if (viewerUrlRef.current) {
-        URL.revokeObjectURL(viewerUrlRef.current);
-        viewerUrlRef.current = null;
-      }
-    };
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => () => {
+    timersRef.current.forEach(t => clearInterval(t));
+    timersRef.current.clear();
+    if (viewerUrlRef.current) { URL.revokeObjectURL(viewerUrlRef.current); viewerUrlRef.current = null; }
   }, []);
 
-  const handleRowClick = (item: Item, e: React.MouseEvent) => {
-    if (e.shiftKey && lastSelected) {
-      selectRange(lastSelected, item.path);
-      return;
-    }
+  const rowClick = (item: Item, e: React.MouseEvent) => {
+    if (e.shiftKey && lastSel) { selRange(lastSel, item.path); return; }
     if (e.metaKey || e.ctrlKey) {
-      setSelected((prev) => {
-        const n = new Set(prev);
-        n.has(item.path) ? n.delete(item.path) : n.add(item.path);
-        return n;
-      });
-      setLastSelected(item.path);
-      return;
+      setSelected(prev => { const n = new Set(prev); n.has(item.path) ? n.delete(item.path) : n.add(item.path); return n; });
+      setLastSel(item.path); return;
     }
-    selectOnly(item.path);
+    selOnly(item.path);
   };
 
-  const openFolder = (name: string) => {
-    setPath((p) => [...p, name]);
-    setSelected(new Set());
-    setMobileNav(false);
-  };
+  const openFolder = (name: string) => { setPath(p => [...p, name]); setSelected(new Set()); };
+  const navTo = (i: number) => { setPath(i === 0 ? [] : path.slice(0, i)); setSelected(new Set()); };
+  const goUp = () => { if (path.length) { setPath(path.slice(0, -1)); setSelected(new Set()); } };
 
-  const navTo = (i: number) => {
-    setPath(i === 0 ? [] : path.slice(0, i));
-    setSelected(new Set());
-    setMobileNav(false);
-  };
+  const run = useCallback(async (label: string, fn: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true); setError(null);
+    try { await fn(); toast(label, "success"); await load(); }
+    catch (e) { const m = e instanceof Error ? e.message : "Error"; setError(m); toast(m, "error"); }
+    finally { setBusy(false); }
+  }, [busy, load, toast]);
 
-  const run = useCallback(
-    async (label: string, fn: () => Promise<void>) => {
-      if (busy) return;
-      setBusy(true);
-      setError(null);
-      try {
-        await fn();
-        addToast(label, "success");
-        await load();
-      } catch (e) {
-        const m = e instanceof Error ? e.message : "Something went wrong";
-        setError(m);
-        addToast(m, "error");
-      } finally {
-        setBusy(false);
-      }
-    },
-    [addToast, busy, load]
-  );
-
-  const clearSelection = () => {
-    setSelected(new Set());
-    setLastSelected(null);
-  };
-  const clearFinishedUploads = () =>
-    setUploads((prev) =>
-      prev.filter((u) => u.status === "queued" || u.status === "uploading")
-    );
-  const selectAll = () => setSelected(new Set(items.map((i) => i.path)));
-  const goUp = () => {
-    if (path.length) {
-      setPath(path.slice(0, -1));
-      clearSelection();
-    }
-  };
+  const clearSel = () => { setSelected(new Set()); setLastSel(null); };
+  const selectAll = () => setSelected(new Set(items.map(i => i.path)));
 
   const handleNewFolder = async () => {
-    const name = window.prompt("Folder name");
-    if (!name?.trim()) return;
+    const name = window.prompt("New folder name:"); if (!name?.trim()) return;
     const trimmed = name.trim();
-    const targetPath = resolve([...path, trimmed]);
-    const optimistic: Item = { name: trimmed, path: targetPath, type: "folder", size: 0, sha: "" };
-    addPending(optimistic);
-    setItems((prev) => (prev.some((item) => item.path === targetPath) ? prev : [optimistic, ...prev]));
+    const tp = resolve([...path, trimmed]);
+    const opt: Item = { name: trimmed, path: tp, type: "folder", size: 0, sha: "" };
+    addPending(opt);
+    setItems(p => p.some(i => i.path === tp) ? p : [opt, ...p]);
     await run(`Created "${trimmed}"`, () =>
-      createGitHubFolder({
-        owner: GitInfo.content_owner,
-        repo: GitInfo.content_repo,
-        path: targetPath,
-        branch: GitInfo.content_branch,
-      })
-    );
+      createGitHubFolder({ owner: GitInfo.content_owner, repo: GitInfo.content_repo, path: tp, branch: GitInfo.content_branch }));
   };
 
-  const handleUpload = async (files: FileList | null, targetBasePath = currentPath) => {
-    if (!files || !files.length) return;
-    const fileList = Array.from(files);
-    const tooLarge = fileList.filter((f) => f.size > MAX_FILE_BYTES);
-    if (tooLarge.length) {
-      addToast(
-        `Skipped ${tooLarge.length} file${tooLarge.length > 1 ? "s" : ""} over 100 MB`,
-        "error"
-      );
+  const handleUpload = async (files: FileList | null, targetBase = curPath) => {
+    if (!files?.length) return;
+    const all = Array.from(files);
+    const ok = all.filter(f => f.size <= MAX_FILE_BYTES);
+    const skipped = all.length - ok.length;
+    if (skipped) toast(`Skipped ${skipped} file${skipped > 1 ? "s" : ""} over 100 MB`, "error");
+    if (!ok.length) return;
+    if (repoSize + ok.reduce((s, f) => s + f.size, 0) > MAX_REPO_BYTES) { toast("Would exceed 5 GB limit.", "error"); return; }
+    const queued: UploadItem[] = ok.map(f => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, name: f.name, size: f.size, progress: 0, status: "queued" }));
+    setUploads(p => [...queued, ...p]);
+    for (const f of ok) {
+      const tp = jp(targetBase, f.name);
+      const opt: Item = { name: f.name, path: tp, type: "file", size: f.size, sha: "" };
+      addPending(opt); setItems(p => p.some(i => i.path === tp) ? p : [opt, ...p]);
     }
-    const accepted = fileList.filter((f) => f.size <= MAX_FILE_BYTES);
-    if (!accepted.length) return;
-
-    const totalIncoming = accepted.reduce((sum, f) => sum + f.size, 0);
-    if (repoSize + totalIncoming > MAX_REPO_BYTES) {
-      addToast("Upload would exceed 5 GB repo limit.", "error");
-      return;
-    }
-    const queued = accepted.map((f) => ({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      name: f.name,
-      size: f.size,
-      progress: 0,
-      status: "queued" as const,
-    }));
-    setUploads((prev) => [...queued, ...prev]);
-
-    for (const f of accepted) {
-      const targetPath = joinPath(targetBasePath, f.name);
-      const optimistic: Item = { name: f.name, path: targetPath, type: "file", size: f.size, sha: "" };
-      addPending(optimistic);
-      setItems((prev) => (prev.some((item) => item.path === targetPath) ? prev : [optimistic, ...prev]));
-    }
-    await run(`Uploaded ${accepted.length} file${accepted.length > 1 ? "s" : ""}`, async () => {
-      for (let i = 0; i < accepted.length; i++) {
-        const f = accepted[i];
-        const uploadId = queued[i]?.id;
-        if (uploadId) {
-          updateUpload(uploadId, { status: "uploading", progress: 3 });
-          startUploadProgress(uploadId);
-        }
+    await run(`Uploaded ${ok.length} file${ok.length > 1 ? "s" : ""}`, async () => {
+      for (let i = 0; i < ok.length; i++) {
+        const f = ok[i]; const uid = queued[i]?.id;
+        if (uid) { updUpload(uid, { status: "uploading", progress: 3 }); startProg(uid); }
         try {
-          await uploadGitHubFile({
-            owner: GitInfo.content_owner,
-            repo: GitInfo.content_repo,
-            path: joinPath(targetBasePath, f.name),
-            branch: GitInfo.content_branch,
-            file: f,
-          });
-          if (uploadId) {
-            stopUploadProgress(uploadId);
-            updateUpload(uploadId, { status: "done", progress: 100 });
-            window.setTimeout(
-              () => setUploads((prev) => prev.filter((u) => u.id !== uploadId)),
-              4000
-            );
-          }
+          await uploadGitHubFile({ owner: GitInfo.content_owner, repo: GitInfo.content_repo, path: jp(targetBase, f.name), branch: GitInfo.content_branch, file: f });
+          if (uid) { stopProg(uid); updUpload(uid, { status: "done", progress: 100 }); setTimeout(() => setUploads(p => p.filter(u => u.id !== uid)), 4000); }
         } catch (err) {
-          if (uploadId) {
-            stopUploadProgress(uploadId);
-            updateUpload(uploadId, {
-              status: "error",
-              message: err instanceof Error ? err.message : "Upload failed",
-            });
-          }
+          if (uid) { stopProg(uid); updUpload(uid, { status: "error", message: err instanceof Error ? err.message : "Failed" }); }
           throw err;
         }
       }
@@ -927,67 +939,36 @@ export default function App() {
   const handleDelete = () => {
     if (!selected.size) return;
     const n = selected.size;
-    if (!window.confirm(`Delete ${n} item${n > 1 ? "s" : ""}? This cannot be undone.`)) return;
+    if (!confirm(`Delete ${n} item${n > 1 ? "s" : ""}? This cannot be undone.`)) return;
     run(`Deleted ${n} item${n > 1 ? "s" : ""}`, async () => {
       for (const p of selected) {
-        const item = itemMap.get(p);
-        if (item) {
-          await deleteGitHubPath({
-            owner: GitInfo.content_owner,
-            repo: GitInfo.content_repo,
-            path: item.path,
-            branch: GitInfo.content_branch,
-            isDir: item.type === "folder",
-            sha: item.sha,
-          });
-        }
+        const item = imap.get(p);
+        if (item) await deleteGitHubPath({ owner: GitInfo.content_owner, repo: GitInfo.content_repo, path: item.path, branch: GitInfo.content_branch, isDir: item.type === "folder", sha: item.sha });
       }
     });
   };
 
   const handleMoveUp = () => {
-    if (!selected.size || path.length === 0) return;
+    if (!selected.size || !path.length) return;
     const parent = resolve(path.slice(0, -1));
     run(`Moved ${selected.size} item${selected.size > 1 ? "s" : ""} up`, async () => {
       for (const p of selected) {
-        const item = itemMap.get(p);
-        if (item) {
-          await moveGitHubPath({
-            owner: GitInfo.content_owner,
-            repo: GitInfo.content_repo,
-            from: item.path,
-            to: [parent, item.name].filter(Boolean).join("/"),
-            branch: GitInfo.content_branch,
-            isDir: item.type === "folder",
-          });
-        }
+        const item = imap.get(p);
+        if (item) await moveGitHubPath({ owner: GitInfo.content_owner, repo: GitInfo.content_repo, from: item.path, to: [parent, item.name].filter(Boolean).join("/"), branch: GitInfo.content_branch, isDir: item.type === "folder" });
       }
     });
   };
 
   const closeViewer = () => {
-    if (viewerUrlRef.current) {
-      URL.revokeObjectURL(viewerUrlRef.current);
-      viewerUrlRef.current = null;
-    }
+    if (viewerUrlRef.current) { URL.revokeObjectURL(viewerUrlRef.current); viewerUrlRef.current = null; }
     setViewer({ open: false });
   };
 
-  const downloadFile = async (item: Item) => {
-    const { blob, name } = await getGitHubFileBlob({
-      owner: GitInfo.content_owner,
-      repo: GitInfo.content_repo,
-      path: item.path,
-      branch: GitInfo.content_branch,
-    });
+  const dlFile = async (item: Item) => {
+    const { blob, name } = await getGitHubFileBlob({ owner: GitInfo.content_owner, repo: GitInfo.content_repo, path: item.path, branch: GitInfo.content_branch });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    const a = Object.assign(document.createElement("a"), { href: url, download: name });
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   };
 
   const viewFile = async (item: Item) => {
@@ -995,741 +976,632 @@ export default function App() {
     try {
       const ext = extOf(item.name);
       const kind: ViewerState["kind"] =
-        ["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext)
-          ? "image"
-          : ext === "pdf"
-            ? "pdf"
-            : ["txt", "md", "json", "js", "ts", "tsx", "jsx", "css", "html", "yml", "yaml", "log", "csv"].includes(ext)
-              ? "text"
-              : "unknown";
-
-      if (kind === "unknown") {
-        setViewer({ open: true, item, kind, loading: false, error: "Preview not available." });
-        return;
-      }
-
-      const { blob } = await getGitHubFileBlob({
-        owner: GitInfo.content_owner,
-        repo: GitInfo.content_repo,
-        path: item.path,
-        branch: GitInfo.content_branch,
-      });
-
-      if (viewerUrlRef.current) {
-        URL.revokeObjectURL(viewerUrlRef.current);
-        viewerUrlRef.current = null;
-      }
-
+        ["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext) ? "image" :
+          ext === "pdf" ? "pdf" :
+            ["txt", "md", "json", "js", "ts", "tsx", "jsx", "css", "html", "yml", "yaml", "log", "csv"].includes(ext) ? "text" : "unknown";
+      if (kind === "unknown") { setViewer({ open: true, item, kind, loading: false, error: "No preview available." }); return; }
+      const { blob } = await getGitHubFileBlob({ owner: GitInfo.content_owner, repo: GitInfo.content_repo, path: item.path, branch: GitInfo.content_branch });
+      if (viewerUrlRef.current) { URL.revokeObjectURL(viewerUrlRef.current); viewerUrlRef.current = null; }
       if (kind === "text") {
-        const text = await blob.text();
-        setViewer({ open: true, item, kind, text, loading: false });
+        setViewer({ open: true, item, kind, text: await blob.text(), loading: false });
       } else {
         const url = URL.createObjectURL(blob);
         viewerUrlRef.current = url;
         setViewer({ open: true, item, kind, url, loading: false });
       }
-    } catch (err) {
-      setViewer({
-        open: true,
-        item,
-        loading: false,
-        error: err instanceof Error ? err.message : "Preview failed.",
-      });
-    }
+    } catch (err) { setViewer({ open: true, item, loading: false, error: err instanceof Error ? err.message : "Preview failed." }); }
   };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isInputTarget(e.target)) return;
-      const key = e.key.toLowerCase();
-
-      if ((e.metaKey || e.ctrlKey) && key === "a") {
-        e.preventDefault();
-        selectAll();
-        return;
-      }
-      if ((e.metaKey || e.ctrlKey) && key === "n") {
-        e.preventDefault();
-        void handleNewFolder();
-        return;
-      }
-      if ((e.metaKey || e.ctrlKey) && key === "u") {
-        e.preventDefault();
-        fileInputRef.current?.click();
-        return;
-      }
-
-      if (e.key === "Escape") {
-        clearSelection();
-        return;
-      }
-      if (e.key === "Delete") {
-        handleDelete();
-        return;
-      }
-      if (e.key === "Backspace" && selected.size === 0) {
-        e.preventDefault();
-        goUp();
-        return;
-      }
+      if (isInput(e.target)) return;
+      const k = e.key.toLowerCase();
+      if ((e.metaKey || e.ctrlKey) && k === "a") { e.preventDefault(); selectAll(); return; }
+      if ((e.metaKey || e.ctrlKey) && k === "n") { e.preventDefault(); void handleNewFolder(); return; }
+      if ((e.metaKey || e.ctrlKey) && k === "u") { e.preventDefault(); fileInputRef.current?.click(); return; }
+      if (e.key === "Escape") { if (viewer.open) closeViewer(); else clearSel(); return; }
+      if (e.key === "Delete" || e.key === "Backspace" && (e.metaKey || e.ctrlKey)) { handleDelete(); return; }
+      if (e.key === "Backspace" && !selected.size) { e.preventDefault(); goUp(); return; }
       if (e.key === "Enter" && selected.size === 1) {
-        const only = Array.from(selected)[0];
-        const item = itemMap.get(only);
+        const item = imap.get(Array.from(selected)[0]);
         if (item?.type === "folder") openFolder(item.name);
         if (item?.type === "file") void viewFile(item);
       }
     };
-
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleDelete, handleNewFolder, itemMap, openFolder, selected, path, viewFile]);
+  });
 
-  const onDragEnter = (e: React.DragEvent) => {
-    if (!isFileDrag(e)) return;
-    e.preventDefault();
-    dragCounterRef.current += 1;
-    setDragging(true);
-  };
-  const onDragLeave = () => {
-    dragCounterRef.current -= 1;
-    if (dragCounterRef.current <= 0) {
-      dragCounterRef.current = 0;
-      setDragging(false);
-    }
-  };
+  const onDragEnter = (e: React.DragEvent) => { if (!isFileDrag(e)) return; e.preventDefault(); dragCounterRef.current++; setDragging(true); };
+  const onDragLeave = () => { if (--dragCounterRef.current <= 0) { dragCounterRef.current = 0; setDragging(false); } };
   const onDrop = (e: React.DragEvent) => {
     if (!isFileDrag(e)) return;
-    e.preventDefault();
-    dragCounterRef.current = 0;
-    setDragging(false);
-    setDropTarget(null);
-    handleUpload(e.dataTransfer?.files ?? null, currentPath);
+    e.preventDefault(); dragCounterRef.current = 0; setDragging(false); setDropTarget(null);
+    handleUpload(e.dataTransfer?.files ?? null, curPath);
   };
 
   const onRowDragStart = (item: Item, e: React.DragEvent) => {
     if (busy) return;
     const payload = selected.has(item.path) ? Array.from(selected) : [item.path];
-    setSelected(new Set(payload));
-    setDragItems(payload);
-    e.dataTransfer?.setData("application/x-jrcloud-paths", JSON.stringify(payload));
-    e.dataTransfer?.setData("text/plain", payload.join("\n"));
+    setSelected(new Set(payload)); setDragItems(payload);
+    e.dataTransfer?.setData("application/x-jr-paths", JSON.stringify(payload));
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
   };
+  const onRowDragEnd = () => { setDragItems([]); setDropTarget(null); };
+  const onRowDragOver = (item: Item, e: React.DragEvent) => { if (item.type !== "folder" || (!isFileDrag(e) && !isInternalDrag(e))) return; e.preventDefault(); setDropTarget(item.path); };
+  const onRowDragLeave = (item: Item) => { if (dropTarget === item.path) setDropTarget(null); };
 
-  const onRowDragEnd = () => {
-    setDragItems([]);
-    setDropTarget(null);
-  };
-
-  const onRowDragOver = (item: Item, e: React.DragEvent) => {
-    if (item.type !== "folder") return;
-    if (!isFileDrag(e) && !isInternalDrag(e)) return;
-    e.preventDefault();
-    setDropTarget(item.path);
-  };
-
-  const onRowDragLeave = (item: Item) => {
-    if (dropTarget === item.path) setDropTarget(null);
-  };
-
-  const handleMoveToFolder = (targetFolderPath: string, pathsToMove: string[]) => {
-    if (!pathsToMove.length) return;
-    run(`Moved ${pathsToMove.length} item${pathsToMove.length > 1 ? "s" : ""}`, async () => {
-      for (const p of pathsToMove) {
-        const item = itemMap.get(p);
-        if (!item) continue;
-        if (item.path === targetFolderPath) continue;
-        if (item.type === "folder" && targetFolderPath.startsWith(`${item.path}/`)) continue;
-        await moveGitHubPath({
-          owner: GitInfo.content_owner,
-          repo: GitInfo.content_repo,
-          from: item.path,
-          to: joinPath(targetFolderPath, item.name),
-          branch: GitInfo.content_branch,
-          isDir: item.type === "folder",
-        });
+  const moveToFolder = (target: string, paths: string[]) => {
+    if (!paths.length) return;
+    run(`Moved ${paths.length} item${paths.length > 1 ? "s" : ""}`, async () => {
+      for (const p of paths) {
+        const item = imap.get(p);
+        if (!item || item.path === target || (item.type === "folder" && target.startsWith(`${item.path}/`))) continue;
+        await moveGitHubPath({ owner: GitInfo.content_owner, repo: GitInfo.content_repo, from: item.path, to: jp(target, item.name), branch: GitInfo.content_branch, isDir: item.type === "folder" });
       }
     });
   };
-
   const onRowDrop = (item: Item, e: React.DragEvent) => {
     if (item.type !== "folder") return;
-    e.preventDefault();
-    setDropTarget(null);
-    const files = e.dataTransfer?.files ?? null;
-    if (files && files.length > 0) {
-      handleUpload(files, item.path);
-      return;
-    }
+    e.preventDefault(); setDropTarget(null);
+    const f = e.dataTransfer?.files ?? null;
+    if (f?.length) { handleUpload(f, item.path); return; }
     if (isInternalDrag(e)) {
-      const payload = e.dataTransfer?.getData("application/x-jrcloud-paths");
-      const pathsToMove = payload ? (JSON.parse(payload) as string[]) : dragItems;
-      handleMoveToFolder(item.path, pathsToMove);
+      const raw = e.dataTransfer?.getData("application/x-jr-paths");
+      moveToFolder(item.path, raw ? JSON.parse(raw) as string[] : dragItems);
     }
   };
 
-  const statusText = activeUploads.length
-    ? `Uploading ${activeUploads.length}`
-    : busy
-      ? "Syncing…"
-      : loading
-        ? "Loading…"
-        : "Connected";
+  const rp = (item: Item) => ({
+    onDoubleClick: () => item.type === "folder" ? openFolder(item.name) : viewFile(item),
+    draggable: !busy,
+    onDragStart: (e: React.DragEvent) => onRowDragStart(item, e),
+    onDragEnd: onRowDragEnd,
+    onDragOver: (e: React.DragEvent) => onRowDragOver(item, e),
+    onDragLeave: () => onRowDragLeave(item),
+    onDrop: (e: React.DragEvent) => onRowDrop(item, e),
+  });
+
+  const statusLabel = activeUps.length ? `Uploading ${activeUps.length}…` : busy ? "Syncing…" : loading ? "Loading…" : "Connected";
+  const folderTitle = path.length ? path[path.length - 1] : "My Drive";
+
+  /* ─── Shared renderers ─── */
+  const renderFinderList = () => (
+    <div className="finder-table">
+      <div className="finder-thead">
+        <span>Name</span><span>Kind</span><span>Size</span><span />
+      </div>
+      {displayed.length > 0 ? displayed.map(item => {
+        const sel = selected.has(item.path);
+        const meta = extMeta(item.name);
+        const isF = item.type === "folder";
+        return (
+          <button key={item.path}
+            className={["finder-row", sel && "selected", dropTarget === item.path && "drop-target"].filter(Boolean).join(" ")}
+            onClick={e => rowClick(item, e)}
+            {...rp(item)}
+          >
+            <div className="finder-name-cell">
+              <div className={`finder-file-ic ${isF ? "is-folder" : "is-file"}`}>
+                {isF
+                  ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8a2 2 0 012-2h4.17a2 2 0 011.42.59l.82.82A2 2 0 0012.83 8H19a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg>
+                  : <>{Ic.file()}{extOf(item.name) && <span className="file-type-badge" style={{ background: meta.color }}>{meta.label}</span>}</>
+                }
+              </div>
+              <span className="finder-name">{item.name}</span>
+            </div>
+            <span className="finder-meta">{isF ? "Folder" : extOf(item.name).toUpperCase() || "File"}</span>
+            <span className="finder-meta">{formatBytes(item.size)}</span>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              {sel && <div className="sel-check-mac">{Ic.check()}</div>}
+            </div>
+          </button>
+        );
+      }) : (
+        <div className="empty-state">
+          <div className="empty-ic">📁</div>
+          <div className="empty-title">{query ? `No results for "${query}"` : "This folder is empty"}</div>
+          <div className="empty-sub">{query ? "Try a different search" : "Drag files here or click Upload"}</div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderFinderGrid = () => (
+    displayed.length > 0 ? (
+      <div className="finder-grid">
+        {displayed.map(item => {
+          const sel = selected.has(item.path);
+          const meta = extMeta(item.name);
+          const isF = item.type === "folder";
+          return (
+            <button key={item.path}
+              className={["grid-item", sel && "selected", dropTarget === item.path && "drop-target"].filter(Boolean).join(" ")}
+              onClick={e => rowClick(item, e)}
+              {...rp(item)}
+            >
+              {sel && <div className="grid-item-sel">{Ic.check()}</div>}
+              <div className={`grid-file-ic ${isF ? "is-folder" : "is-file"}`}>
+                {isF
+                  ? <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8a2 2 0 012-2h4.17a2 2 0 011.42.59l.82.82A2 2 0 0012.83 8H19a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg>
+                  : <>{Ic.file()}{extOf(item.name) && <span className="grid-ext-badge" style={{ background: meta.color }}>{meta.label}</span>}</>
+                }
+              </div>
+              <div className="grid-item-name" title={item.name}>{item.name}</div>
+              <div className="grid-item-sub">{isF ? "Folder" : formatBytes(item.size)}</div>
+            </button>
+          );
+        })}
+      </div>
+    ) : (
+      <div className="empty-state">
+        <div className="empty-ic">📁</div>
+        <div className="empty-title">{query ? `No results for "${query}"` : "Empty"}</div>
+        <div className="empty-sub">{query ? "Try a different search" : "Drop files here or tap Upload"}</div>
+      </div>
+    )
+  );
+
+  const renderIosList = () => (
+    <div className="ios-list">
+      {displayed.length > 0 ? displayed.map(item => {
+        const sel = selected.has(item.path);
+        const meta = extMeta(item.name);
+        const isF = item.type === "folder";
+        return (
+          <button key={item.path}
+            className={["ios-row", sel && "selected"].filter(Boolean).join(" ")}
+            onClick={e => {
+              if (sel) { clearSel(); return; }
+              rowClick(item, e);
+              if (!e.shiftKey && !e.metaKey && !e.ctrlKey && item.type === "folder") openFolder(item.name);
+              if (!e.shiftKey && !e.metaKey && !e.ctrlKey && item.type === "file") void viewFile(item);
+            }}
+          >
+            <div className={`ios-file-ic ${isF ? "folder" : "file"}`}>
+              {isF
+                ? <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8a2 2 0 012-2h4.17a2 2 0 011.42.59l.82.82A2 2 0 0012.83 8H19a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg>
+                : <>{Ic.file()}{extOf(item.name) && <span className="ios-file-ext" style={{ background: meta.color }}>{meta.label}</span>}</>
+              }
+            </div>
+            <div className="ios-row-text">
+              <div className="ios-row-name">{item.name}</div>
+              <div className="ios-row-sub">{isF ? "Folder" : `${formatBytes(item.size)} · ${extOf(item.name).toUpperCase() || "File"}`}</div>
+            </div>
+            {sel
+              ? <div className="ios-row-check">{Ic.check()}</div>
+              : isF ? <span className="ios-chev">{Ic.chevRight()}</span> : null
+            }
+          </button>
+        );
+      }) : (
+        <div className="empty-state">
+          <div className="empty-ic">📁</div>
+          <div className="empty-title">{query ? `No results for "${query}"` : "This folder is empty"}</div>
+          <div className="empty-sub">{query ? "Try a different search" : "Tap + to upload files"}</div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderIosGrid = () => (
+    displayed.length > 0 ? (
+      <div className="ios-grid">
+        {displayed.map(item => {
+          const sel = selected.has(item.path);
+          const meta = extMeta(item.name);
+          const isF = item.type === "folder";
+          return (
+            <button key={item.path}
+              className={["ios-grid-item", sel && "selected"].filter(Boolean).join(" ")}
+              onClick={() => {
+                if (item.type === "folder") openFolder(item.name);
+                else void viewFile(item);
+              }}
+            >
+              {sel && <div className="ios-grid-sel">{Ic.check()}</div>}
+              <div className={`ios-grid-ic ${isF ? "folder" : "file"}`}>
+                {isF
+                  ? <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M3 8a2 2 0 012-2h4.17a2 2 0 011.42.59l.82.82A2 2 0 0012.83 8H19a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg>
+                  : <>{Ic.file()}{extOf(item.name) && <span className="ios-grid-ext" style={{ background: meta.color }}>{meta.label}</span>}</>
+                }
+              </div>
+              <div className="ios-grid-name" title={item.name}>{item.name}</div>
+              <div className="ios-grid-sub">{isF ? "Folder" : formatBytes(item.size)}</div>
+            </button>
+          );
+        })}
+      </div>
+    ) : (
+      <div className="empty-state">
+        <div className="empty-ic">📁</div>
+        <div className="empty-title">Empty</div>
+        <div className="empty-sub">Tap + to add files</div>
+      </div>
+    )
+  );
 
   return (
     <>
       <style>{CSS}</style>
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={(e) => handleUpload(e.currentTarget.files)}
-      />
+      <input ref={fileInputRef} type="file" multiple className="hidden"
+        onChange={e => handleUpload(e.currentTarget.files)} />
 
-      {mobileNav ? (
-        <div className="sidebar-backdrop" onClick={() => setMobileNav(false)} />
-      ) : null}
-
-      <div className="app">
-        {/* ── Sidebar ── */}
-        <aside className={`sidebar${mobileNav ? " open" : ""}`}>
-          <div className="sidebar-top">
-            <div className="logo-mark">
-              <div className="logo-icon">{I.cloud()}</div>
-              <div>
-                <div className="logo-text">
-                  Jr<span>Cloud</span>
-                </div>
-                <div className="logo-sub">personal github drive</div>
-              </div>
+      {/* ══════════════════════════════════
+          DESKTOP — macOS Finder layout
+      ══════════════════════════════════ */}
+      <div className="desktop-view"
+        onDragEnter={onDragEnter}
+        onDragOver={e => { if (isFileDrag(e)) e.preventDefault(); }}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        <div className="mac-window" style={{ flex: 1, borderRadius: 0 }}>
+          {/* Sidebar */}
+          <aside className="sidebar">
+            <div className="sidebar-traffic">
+              <div className="td cl" />
+              <div className="td mn" />
+              <div className="td mx" />
             </div>
-          </div>
 
-          <nav className="sidebar-nav">
-            <div className="nav-label">Storage</div>
-            <button className="nav-item active" onClick={() => navTo(0)}>
-              <span className="nav-item-icon" style={{ color: "var(--accent)" }}>
-                {I.folder()}
-              </span>
-              My Drive
-            </button>
-            <button className="nav-item" style={{ opacity: 0.35, cursor: "default" }} disabled>
-              <span className="nav-item-icon" style={{ color: "var(--muted)" }}>
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-                  <circle cx="10" cy="10" r="7" />
-                  <path d="M10 6v4l2.5 2" />
-                </svg>
-              </span>
-              Recent
-            </button>
-            <button className="nav-item" style={{ opacity: 0.35, cursor: "default" }} disabled>
-              <span className="nav-item-icon" style={{ color: "var(--muted)" }}>
-                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7">
-                  <path d="M5 7h10l-1 9H6L5 7zM3 7h14M8 7V5h4v2" />
-                </svg>
-              </span>
-              Trash
-            </button>
-
-            <div className="nav-label" style={{ marginTop: 10 }}>Quick Access</div>
-            {(path.length > 0 ? path : []).map((seg, i) => (
-              <button key={seg + i} className="nav-item" onClick={() => navTo(i + 1)}>
-                <span className="nav-item-icon" style={{ color: "var(--muted)" }}>
-                  {I.folder("var(--muted)")}
-                </span>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{seg}</span>
-              </button>
-            ))}
-            {path.length === 0 ? (
-              <div style={{ fontSize: 11.5, color: "var(--muted)", padding: "4px 8px" }}>
-                No subfolders opened
+            <nav className="sidebar-nav">
+              <div className="nav-section">
+                <div className="nav-sec-hd">Favourites</div>
+                <button className="nav-item active" onClick={() => navTo(0)}>
+                  <span className="nav-ic">{Ic.drive()}</span>
+                  <span className="nav-item-label">My Drive</span>
+                </button>
+                <button className="nav-item" style={{ opacity: 0.4, cursor: "default" }} disabled>
+                  <span className="nav-ic">{Ic.clock()}</span>
+                  <span className="nav-item-label">Recent</span>
+                </button>
+                <button className="nav-item" style={{ opacity: 0.4, cursor: "default" }} disabled>
+                  <span className="nav-ic">{Ic.star()}</span>
+                  <span className="nav-item-label">Starred</span>
+                </button>
               </div>
-            ) : null}
-          </nav>
 
-          <div className="sidebar-bottom">
-            <div className="status-card" style={{ marginBottom: 8 }}>
-              <div className="status-row" style={{ justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      position: "relative",
-                    }}
-                  >
-                    <svg width="48" height="48" viewBox="0 0 48 48">
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="18"
-                        stroke="var(--surface3)"
-                        strokeWidth="6"
-                        fill="none"
-                      />
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="18"
-                        stroke="var(--accent)"
-                        strokeWidth="6"
-                        fill="none"
-                        strokeDasharray={`${Math.round(2 * Math.PI * 18 * repoUsagePct / 100)} ${Math.round(2 * Math.PI * 18)}`}
-                        strokeLinecap="round"
-                        transform="rotate(-90 24 24)"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="logo-text" style={{ fontSize: 12, fontWeight: 600 }}>
-                      Storage
-                    </div>
-                    <div className="logo-sub" style={{ fontSize: 10 }}>
-                      {formatBytes(repoSize)} / 5 GB
-                    </div>
-                  </div>
+              {path.length > 0 && <>
+                <div className="nav-divider" />
+                <div className="nav-section">
+                  <div className="nav-sec-hd">Open</div>
+                  {path.map((seg, i) => (
+                    <button key={seg + i} className="nav-item" onClick={() => navTo(i + 1)}>
+                      <span className="nav-ic">{Ic.folder()}</span>
+                      <span className="nav-item-label">{seg}</span>
+                    </button>
+                  ))}
                 </div>
-                <div className="status-name" style={{ fontSize: 12 }}>
-                  {repoUsagePct}%
-                </div>
-              </div>
-              {repoSizeError ? (
-                <div className="logo-sub" style={{ color: "var(--red)", marginTop: 6 }}>
-                  {repoSizeError}
-                </div>
-              ) : null}
-            </div>
-            <div className="status-card">
-              <div className="status-row">
-                <div className="status-dot" />
-                <div className="status-name">{statusText}</div>
-              </div>
-              <div className="status-repo">
-                {GitInfo.content_repo
-                  ? `${GitInfo.content_owner}/${GitInfo.content_repo}`
-                  : "github.com"}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* ── Main ── */}
-        <div
-          className="main-area"
-          onDragEnter={onDragEnter}
-          onDragOver={(e) => {
-            if (isFileDrag(e)) e.preventDefault();
-          }}
-          onDragLeave={onDragLeave}
-          onDrop={onDrop}
-        >
-          {/* Topbar */}
-          <div className="topbar">
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setMobileNav(true)}
-              aria-label="Open sidebar"
-              type="button"
-            >
-              {I.menu()}
-            </button>
-            <nav className="breadcrumb">
-              {breadcrumb.map((crumb, i) => (
-                <React.Fragment key={`${crumb}-${i}`}>
-                  <button className="crumb" onClick={() => navTo(i)}>
-                    {i === 0 ? I.home() : null}
-                    {crumb === "/" ? "Home" : crumb}
-                  </button>
-                  {i < breadcrumb.length - 1 ? (
-                    <span className="crumb-sep">{I.chevron()}</span>
-                  ) : null}
-                </React.Fragment>
-              ))}
+              </>}
             </nav>
 
-            <div className="search-box">
-              <span style={{ color: "var(--muted)", flexShrink: 0 }}>{I.search()}</span>
-              <input
-                placeholder="Search…"
-                value={query}
-                onChange={(e) => setQuery(e.currentTarget.value)}
-              />
-              {query ? (
-                <button
-                  onClick={() => setQuery("")}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--muted)",
-                    display: "flex",
-                    padding: 0,
-                  }}
-                >
-                  {I.x()}
-                </button>
-              ) : null}
-            </div>
-
-            <div className="topbar-right">
-              <div className="view-toggle">
-                <button
-                  className={`vt-btn${view === "list" ? " active" : ""}`}
-                  onClick={() => setView("list")}
-                  title="List view"
-                >
-                  {I.list()}
-                </button>
-                <button
-                  className={`vt-btn${view === "grid" ? " active" : ""}`}
-                  onClick={() => setView("grid")}
-                  title="Grid view"
-                >
-                  {I.grid()}
-                </button>
+            <div className="sidebar-foot">
+              <div className="storage-row">
+                <span className="storage-label">Storage</span>
+                <span className="storage-pct">{usedPct}%</span>
               </div>
-              <button className="btn btn-soft" onClick={handleNewFolder} disabled={!configReady || busy}>
-                {I.newFolder()} New folder
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!configReady || busy}
-              >
-                {I.upload()} Upload
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="content">
-            {error ? (
-              <div className="error-bar">
-                {I.info()}
-                <span>{error}</span>
+              <div className="storage-bar">
+                <div className="storage-fill" style={{ width: `${usedPct}%` }} />
               </div>
-            ) : null}
+              <div className="storage-cap">{formatBytes(repoSize)} of 5 GB</div>
+              <div className="status-row">
+                <div className="status-led" />
+                <div className="status-txt">{statusLabel} · {GitInfo.content_repo || "github.com"}</div>
+              </div>
+            </div>
+          </aside>
 
-            {uploads.length > 0 ? (
-              <div className="upload-panel">
-                <div className="upload-head">
-                  <div className="upload-title">Uploads</div>
-                  <div className="upload-count">
-                    {activeUploads.length} active · {uploads.length} total
-                  </div>
-                  <div style={{ marginLeft: "auto" }}>
-                    <button
-                      className="btn btn-ghost"
-                      onClick={clearFinishedUploads}
-                      disabled={activeUploads.length === uploads.length}
-                    >
-                      Clear finished
+          {/* Main */}
+          <div className="main">
+            {/* Toolbar */}
+            <div className="toolbar">
+              <div className="toolbar-nav-btns">
+                <button className="toolbar-nav-btn" onClick={goUp} disabled={!path.length} title="Back">{Ic.chevLeft()}</button>
+              </div>
+
+              <nav className="breadcrumb">
+                {crumbs.map((seg, i) => (
+                  <React.Fragment key={`${seg}-${i}`}>
+                    <button className="crumb" onClick={() => navTo(i)}>
+                      {seg === "/" ? "Home" : seg}
                     </button>
-                  </div>
+                    {i < crumbs.length - 1 && <span className="crumb-sep">{Ic.chevRight()}</span>}
+                  </React.Fragment>
+                ))}
+              </nav>
+
+              <div className="search-wrap">
+                <span className="search-ic">{Ic.search()}</span>
+                <input className="search-input" placeholder="Search" value={query} onChange={e => setQuery(e.currentTarget.value)} />
+                {query && <button className="search-clear" onClick={() => setQuery("")}><svg width="7" height="7" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M2 2l6 6M8 2L2 8" /></svg></button>}
+              </div>
+
+              <div className="toolbar-right">
+                <div className="seg-ctrl">
+                  <button className={`seg-btn${view === "list" ? " on" : ""}`} onClick={() => setView("list")} title="List">{Ic.list()}</button>
+                  <button className={`seg-btn${view === "grid" ? " on" : ""}`} onClick={() => setView("grid")} title="Grid">{Ic.grid()}</button>
                 </div>
-                <div className="upload-list">
-                  {uploads.map((u) => (
-                    <div key={u.id} className="upload-item" title={u.message ?? ""}>
-                      <div className="upload-row">
-                        <div className="upload-name">{u.name}</div>
-                        <div className={`upload-bar${u.status === "error" ? " error" : ""}`}>
-                          <span style={{ width: `${u.progress}%` }} />
+                <button className="tb-icon-btn" onClick={load} disabled={loading || busy} title="Refresh">{Ic.refresh()}</button>
+                <button className="tb-btn tb-btn-default" onClick={handleNewFolder} disabled={!configOk || busy}>{Ic.newFolder()} New Folder</button>
+                <button className="tb-btn tb-btn-tint" onClick={() => fileInputRef.current?.click()} disabled={!configOk || busy}>{Ic.upload()} Upload</button>
+              </div>
+            </div>
+
+            {/* Finder bar */}
+            <div className="finder-bar">
+              <span className="finder-chip">{filtered.length} item{filtered.length !== 1 ? "s" : ""}</span>
+              {selected.size > 0 && <>
+                <span className="finder-div" />
+                <span className="finder-chip sel">{selected.size} selected</span>
+                {selected.size === 1 && (() => {
+                  const item = imap.get(Array.from(selected)[0]);
+                  return item?.type === "file" ? <>
+                    <button className="tb-btn tb-btn-ghost" style={{ height: 24, fontSize: 12 }} onClick={() => viewFile(item)} disabled={busy}>{Ic.eye()} View</button>
+                    <button className="tb-btn tb-btn-ghost" style={{ height: 24, fontSize: 12 }} onClick={() => dlFile(item)} disabled={busy}>{Ic.download()} Download</button>
+                  </> : null;
+                })()}
+                <button className="tb-btn tb-btn-destructive" style={{ height: 24, fontSize: 12 }} onClick={handleDelete} disabled={busy}>{Ic.trash()} Delete</button>
+                {path.length > 0 && <button className="tb-btn tb-btn-ghost" style={{ height: 24, fontSize: 12 }} onClick={handleMoveUp} disabled={busy}>{Ic.moveUp()} Move up</button>}
+                <button className="tb-btn tb-btn-ghost" style={{ height: 24, fontSize: 12 }} onClick={clearSel}>{Ic.x()} Deselect</button>
+              </>}
+              <span className="finder-flex" />
+            </div>
+
+            {error && <div className="error-banner">{Ic.info()}<span>{error}</span></div>}
+
+            {uploads.length > 0 && (
+              <div className="upload-bar-wrap">
+                <div className="upload-bar-head">
+                  <span className="upload-bar-title">Uploads</span>
+                  <span className="upload-bar-count">{activeUps.length} active</span>
+                  <button className="tb-btn tb-btn-ghost" style={{ height: 22, fontSize: 11.5, marginLeft: "auto" }}
+                    onClick={() => setUploads(p => p.filter(u => u.status === "queued" || u.status === "uploading"))}
+                    disabled={activeUps.length === uploads.length}>Clear done</button>
+                </div>
+                <div className="upload-items">
+                  {uploads.map(u => (
+                    <div key={u.id} className="upload-row">
+                      <div className="upload-col">
+                        <div className="upload-fname">{u.name}</div>
+                        <div className={`upload-track${u.status === "error" ? " err" : ""}`}>
+                          <span className="upload-fill" style={{ width: `${u.progress}%` }} />
                         </div>
                       </div>
-                      <div className="upload-status">
-                        {u.status === "done"
-                          ? "Done"
-                          : u.status === "error"
-                            ? "Failed"
-                            : `${Math.round(u.progress)}%`}
-                      </div>
+                      <div className="upload-pct">{u.status === "done" ? "Done" : u.status === "error" ? "Error" : `${Math.round(u.progress)}%`}</div>
                     </div>
                   ))}
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {/* Action bar */}
-            <div className="action-bar">
-              <span className="ab-pill">
-                {filtered.length} item{filtered.length !== 1 ? "s" : ""}
-              </span>
-              {selected.size > 0 ? (
-                <>
-                  <div className="ab-sep" />
-                  <span className="ab-pill accent">{selected.size} selected</span>
-                  {selected.size === 1
-                    ? (() => {
-                        const only = Array.from(selected)[0];
-                        const item = itemMap.get(only);
-                        return item?.type === "file" ? (
-                          <>
-                            <button className="btn btn-ghost" onClick={() => viewFile(item)} disabled={busy}>
-                              {I.view()} View
-                            </button>
-                            <button className="btn btn-ghost" onClick={() => downloadFile(item)} disabled={busy}>
-                              {I.download()} Download
-                            </button>
-                          </>
-                        ) : null;
-                      })()
-                    : null}
-                  <button className="btn btn-danger" onClick={handleDelete} disabled={busy}>
-                    {I.trash()} Delete
-                  </button>
-                  {path.length > 0 ? (
-                    <button className="btn btn-ghost" onClick={handleMoveUp} disabled={busy}>
-                      {I.moveUp()} Move up
-                    </button>
-                  ) : null}
-                  <button className="btn btn-ghost" onClick={clearSelection}>
-                    {I.x()} Deselect
-                  </button>
-                </>
-              ) : null}
-              <div className="ab-space" />
-              <button
-                className="btn btn-icon btn-ghost"
-                onClick={load}
-                disabled={loading || busy}
-                title="Refresh"
-              >
-                {I.refresh()}
-              </button>
-            </div>
-
-            {/* Loading skeletons */}
-            {loading ? (
-              <div className="file-table">
-                <div className="ft-head">
-                  <span>Name</span>
-                  <span>Size</span>
-                  <span>Type</span>
-                  <span />
-                </div>
-                {[1, 2, 3, 4, 5].map((n, i) => (
-                  <div key={`sk-${n}`} className="ft-row" style={{ cursor: "default" }}>
-                    <div className="name-cell">
-                      <div
-                        className="skeleton"
-                        style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0 }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          className="skeleton"
-                          style={{ height: 11, width: 100 + i * 22, marginBottom: 6 }}
-                        />
-                        <div className="skeleton" style={{ height: 9, width: 44 }} />
+            {/* File list / grid */}
+            <div className="content">
+              {loading && (
+                <div className="finder-table">
+                  <div className="finder-thead"><span>Name</span><span>Kind</span><span>Size</span><span /></div>
+                  {[1, 2, 3, 4, 5, 6].map((n, i) => (
+                    <div key={n} className="finder-row" style={{ cursor: "default" }}>
+                      <div className="finder-name-cell">
+                        <div className="sk" style={{ width: 20, height: 20, borderRadius: 4, flexShrink: 0 }} />
+                        <div className="sk" style={{ height: 11, width: 80 + i * 22 }} />
                       </div>
+                      <div className="sk" style={{ height: 9, width: 32 }} />
+                      <div className="sk" style={{ height: 9, width: 28 }} />
                     </div>
-                    <div className="skeleton" style={{ height: 9, width: 36 }} />
-                    <div className="skeleton" style={{ height: 9, width: 28 }} />
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {/* List view */}
-            {!loading && view === "list" ? (
-              <div className="file-table">
-                <div className="ft-head">
-                  <span>Name</span>
-                  <span>Size</span>
-                  <span>Type</span>
-                  <span />
+                  ))}
                 </div>
-                {filtered.length > 0 ? (
-                  [...folders, ...files].map((item) => {
-                    const sel = selected.has(item.path);
-                    const ext = extOf(item.name);
-                    return (
-                      <button
-                        key={item.path}
-                        className={["ft-row", sel && "selected", dropTarget === item.path && "drop-target"].filter(Boolean).join(" ")}
-                        onClick={(e) => handleRowClick(item, e)}
-                        onDoubleClick={() => (item.type === "folder" ? openFolder(item.name) : viewFile(item))}
-                        draggable={!busy}
-                        onDragStart={(e) => onRowDragStart(item, e)}
-                        onDragEnd={onRowDragEnd}
-                        onDragOver={(e) => onRowDragOver(item, e)}
-                        onDragLeave={() => onRowDragLeave(item)}
-                        onDrop={(e) => onRowDrop(item, e)}
-                      >
-                        <div className="name-cell">
-                          <div className={`icon-wrap ${item.type === "folder" ? "icon-folder" : "icon-file"}`}>
-                            {item.type === "folder" ? I.folder() : null}
-                            {item.type === "file" ? (
-                              <>
-                                {I.file()}
-                                {ext ? (
-                                  <div className="ext-pip" style={{ background: extColor(item.name) }} />
-                                ) : null}
-                              </>
-                            ) : null}
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <div className="item-name">{item.name}</div>
-                            <div className="item-sub">
-                              {item.type === "folder" ? "folder" : ext ? `.${ext}` : "file"}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="cell-mono">{formatBytes(item.size)}</div>
-                        <div className="cell-mono" style={{ color: "var(--muted2)" }}>
-                          {item.type === "folder" ? "Dir" : "File"}
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-                          {sel ? <div className="sel-check">{I.check()}</div> : null}
-                        </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="empty">
-                    <div className="empty-icon">{I.folder("var(--muted)")}</div>
-                    <p>{query ? `No results for "${query}"` : "This folder is empty"}</p>
-                    <span>{query ? "Try a different search term" : "Drag & drop files here or click Upload"}</span>
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            {/* Grid view */}
-            {!loading && view === "grid" ? (
-              filtered.length > 0 ? (
-                <div className="file-grid">
-                  {[...folders, ...files].map((item) => {
-                    const sel = selected.has(item.path);
-                    const ext = extOf(item.name);
-                    return (
-                      <button
-                        key={item.path}
-                        className={["grid-card", sel && "selected", dropTarget === item.path && "drop-target"].filter(Boolean).join(" ")}
-                        onClick={(e) => handleRowClick(item, e)}
-                        onDoubleClick={() => (item.type === "folder" ? openFolder(item.name) : viewFile(item))}
-                        draggable={!busy}
-                        onDragStart={(e) => onRowDragStart(item, e)}
-                        onDragEnd={onRowDragEnd}
-                        onDragOver={(e) => onRowDragOver(item, e)}
-                        onDragLeave={() => onRowDragLeave(item)}
-                        onDrop={(e) => onRowDrop(item, e)}
-                      >
-                        {sel ? <div className="grid-sel-badge">{I.check()}</div> : null}
-                        <div className={`grid-icon ${item.type === "folder" ? "fi" : "di"}`}>
-                          {item.type === "folder" ? (
-                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="var(--accent)" strokeWidth="1.4">
-                              <path d="M3 6a2 2 0 012-2h3l2 2h7a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
-                            </svg>
-                          ) : null}
-                          {item.type === "file" ? (
-                            <>
-                              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="var(--muted)" strokeWidth="1.5">
-                                <path d="M6 3h5l4 4v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2z" />
-                                <path d="M11 3v5h5" />
-                              </svg>
-                              {ext ? (
-                                <div
-                                  style={{
-                                    position: "absolute",
-                                    bottom: -3,
-                                    right: -3,
-                                    width: 10,
-                                    height: 10,
-                                    borderRadius: "50%",
-                                    background: extColor(item.name),
-                                    border: "2px solid var(--surface)",
-                                  }}
-                                />
-                              ) : null}
-                            </>
-                          ) : null}
-                        </div>
-                        <div className="grid-name" title={item.name}>
-                          {item.name}
-                        </div>
-                        <div className="grid-meta">{item.type === "folder" ? "folder" : formatBytes(item.size)}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="empty">
-                  <div className="empty-icon">{I.folder("var(--muted)")}</div>
-                  <p>{query ? `No results for "${query}"` : "This folder is empty"}</p>
-                  <span>{query ? "Try a different search term" : "Drag & drop files or click Upload"}</span>
-                </div>
-              )
-            ) : null}
+              )}
+              {!loading && (view === "list" ? renderFinderList() : renderFinderGrid())}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Drag overlay */}
-      {dragging ? (
-        <div className="drop-overlay">
-          <div className="drop-card">
-            <div className="drop-icon">📂</div>
-            <div className="drop-title">Drop to upload</div>
-            <div className="drop-sub">Files will be added to current folder</div>
+      {/* ══════════════════════════════════
+          MOBILE — iOS Files layout
+      ══════════════════════════════════ */}
+      <div className="mobile-view"
+        onDragEnter={onDragEnter}
+        onDragOver={e => { if (isFileDrag(e)) e.preventDefault(); }}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        {/* iOS Navigation bar */}
+        <div className="ios-nav">
+          {/* Standard nav bar: back | centered title | refresh */}
+          <div className="ios-nav-bar">
+            {path.length > 0
+              ? <button className="ios-back-btn" onClick={goUp}>
+                {Ic.chevLeft()}
+                <span className="ios-back-label">{path.length > 1 ? path[path.length - 2] : "Home"}</span>
+              </button>
+              : <div style={{ width: 8 }} />
+            }
+            {path.length > 0 && <div className="ios-nav-center">{folderTitle}</div>}
+            <div className="ios-nav-right">
+              <button className="ios-nav-btn" onClick={load} disabled={loading || busy} title="Refresh">{Ic.refresh()}</button>
+            </div>
+          </div>
+          <div className="ios-search-wrap">
+            <span className="ios-search-ic">{Ic.search()}</span>
+            <input className="ios-search" placeholder="Search" value={query} onChange={e => setQuery(e.currentTarget.value)} />
+            {query && <button className="ios-search-clear" onClick={() => setQuery("")}><svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M2 2l6 6M8 2L2 8" /></svg></button>}
+          </div>
+          <div className="ios-seg-wrap">
+            <div className="ios-seg">
+              <button className={`ios-seg-btn${view === "list" ? " on" : ""}`} onClick={() => setView("list")}>
+                {Ic.list()} List
+              </button>
+              <button className={`ios-seg-btn${view === "grid" ? " on" : ""}`} onClick={() => setView("grid")}>
+                {Ic.grid()} Grid
+              </button>
+            </div>
           </div>
         </div>
-      ) : null}
 
-      {/* Viewer */}
-      {viewer.open ? (
-        <div className="viewer-overlay" onClick={closeViewer}>
-          <div className="viewer-card" onClick={(e) => e.stopPropagation()}>
-            <div className="viewer-head">
-              <div className="viewer-title">{viewer.item?.name ?? "Preview"}</div>
-              <div className="viewer-actions">
-                {viewer.item?.type === "file" ? (
-                  <button className="btn btn-ghost" onClick={() => viewFile(viewer.item!)}>
-                    {I.view()} Refresh
-                  </button>
-                ) : null}
-                {viewer.item?.type === "file" ? (
-                  <button className="btn btn-ghost" onClick={() => downloadFile(viewer.item!)}>
-                    {I.download()} Download
-                  </button>
-                ) : null}
-                <button className="btn btn-ghost" onClick={closeViewer}>
-                  {I.x()} Close
-                </button>
+        {/* Scroll content */}
+        <div className="ios-scroll">
+          {error && <div className="error-banner">{Ic.info()}<span>{error}</span></div>}
+
+          {uploads.length > 0 && (
+            <div className="upload-bar-wrap" style={{ margin: "8px 16px", borderRadius: 12, border: "none", boxShadow: "0 1px 0 rgba(0,0,0,0.06)" }}>
+              <div className="upload-bar-head">
+                <span className="upload-bar-title">Uploads</span>
+                <span className="upload-bar-count">{activeUps.length} active</span>
+                <button className="tb-btn tb-btn-ghost" style={{ height: 22, fontSize: 11.5, marginLeft: "auto" }}
+                  onClick={() => setUploads(p => p.filter(u => u.status === "queued" || u.status === "uploading"))}
+                  disabled={activeUps.length === uploads.length}>Clear</button>
+              </div>
+              <div className="upload-items">
+                {uploads.map(u => (
+                  <div key={u.id} className="upload-row">
+                    <div className="upload-col">
+                      <div className="upload-fname">{u.name}</div>
+                      <div className={`upload-track${u.status === "error" ? " err" : ""}`}>
+                        <span className="upload-fill" style={{ width: `${u.progress}%` }} />
+                      </div>
+                    </div>
+                    <div className="upload-pct">{u.status === "done" ? "Done" : u.status === "error" ? "Error" : `${Math.round(u.progress)}%`}</div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="viewer-body">
-              {viewer.loading ? <div className="empty">Loading preview…</div> : null}
-              {viewer.error ? <div className="error-bar">{I.info()}<span>{viewer.error}</span></div> : null}
-              {!viewer.loading && !viewer.error && viewer.kind === "image" && viewer.url ? (
-                <img className="viewer-img" src={viewer.url} alt={viewer.item?.name ?? "Preview"} />
-              ) : null}
-              {!viewer.loading && !viewer.error && viewer.kind === "pdf" && viewer.url ? (
-                <iframe className="viewer-iframe" src={viewer.url} title={viewer.item?.name ?? "Preview"} />
-              ) : null}
-              {!viewer.loading && !viewer.error && viewer.kind === "text" ? (
-                <pre className="viewer-text">{viewer.text ?? ""}</pre>
-              ) : null}
-              {!viewer.loading && !viewer.error && viewer.kind === "unknown" ? (
-                <div className="empty">
-                  <p>Preview not available.</p>
-                  <span>Use Download to access this file.</span>
+          )}
+
+          {/* Section header */}
+          {!loading && !query && displayed.length > 0 && (
+            <div className="ios-section-header">{displayed.length} item{displayed.length !== 1 ? "s" : ""}</div>
+          )}
+
+          {/* Loading skeleton */}
+          {loading && (
+            <div className="ios-skeleton-list">
+              {[1, 2, 3, 4, 5].map((n, i) => (
+                <div key={n} className="ios-skeleton-row">
+                  <div className="sk" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="sk" style={{ height: 13, width: `${55 + i * 12}%`, marginBottom: 7 }} />
+                    <div className="sk" style={{ height: 10, width: "38%" }} />
+                  </div>
+                  <div className="sk" style={{ width: 10, height: 16, borderRadius: 3 }} />
                 </div>
-              ) : null}
+              ))}
+            </div>
+          )}
+
+          {!loading && mobileTab === "drive" && (view === "list" ? renderIosList() : renderIosGrid())}
+          {!loading && mobileTab !== "drive" && (
+            <div className="empty-state" style={{ paddingTop: 80 }}>
+              <div className="empty-ic">🔜</div>
+              <div className="empty-title">Coming Soon</div>
+              <div className="empty-sub">This section is not yet available</div>
+            </div>
+          )}
+        </div>
+
+        {/* iOS selection action bar — shown when items selected, replaces bottom bar */}
+        {selected.size > 0 && (
+          <div className="ios-sel-bar">
+            <span className="ios-sel-label">{selected.size} selected</span>
+            {selected.size === 1 && (() => {
+              const item = imap.get(Array.from(selected)[0]);
+              return item?.type === "file" ? <>
+                <button className="ios-sel-btn" onClick={() => viewFile(item)}>
+                  <span className="ios-sel-btn-ic">{Ic.eye()}</span>View
+                </button>
+                <button className="ios-sel-btn" onClick={() => dlFile(item)}>
+                  <span className="ios-sel-btn-ic">{Ic.download()}</span>Save
+                </button>
+              </> : null;
+            })()}
+            {path.length > 0 && <button className="ios-sel-btn" onClick={handleMoveUp}><span className="ios-sel-btn-ic">{Ic.moveUp()}</span>Up</button>}
+            <button className="ios-sel-btn danger" onClick={handleDelete}>
+              <span className="ios-sel-btn-ic">{Ic.trash()}</span>Delete
+            </button>
+            <button className="ios-sel-btn" onClick={clearSel}>
+              <span className="ios-sel-btn-ic">{Ic.x()}</span>Done
+            </button>
+          </div>
+        )}
+
+        {/* Bottom bar — floating action btns + nav tabs in one row */}
+        {selected.size === 0 && (
+          <div className="ios-bottom-bar">
+            {/* Floating action buttons — above the nav bar */}
+            <div className="ios-fab-group">
+              <button className="ios-fab newfolder" onClick={handleNewFolder} title="New Folder">
+                <FolderPlus size={18} weight="regular" />
+              </button>
+              <button className="ios-fab upload" onClick={() => fileInputRef.current?.click()} title="Upload">
+                <UploadSimple size={18} weight="bold" />
+              </button>
+            </div>
+            {/* Nav tabs */}
+            <div className="ios-tabbar">
+              <button className={`ios-tab${mobileTab === "drive" ? " active" : ""}`} onClick={() => setMobileTab("drive")}>
+                <div className="ios-tab-ic">
+                  <Folder size={24} weight={mobileTab === "drive" ? "fill" : "regular"} />
+                </div>
+                <span className="ios-tab-label">Browse</span>
+              </button>
+              <button className={`ios-tab${mobileTab === "recent" ? " active" : ""}`} onClick={() => setMobileTab("recent")}>
+                <div className="ios-tab-ic"><Clock size={24} weight={mobileTab === "recent" ? "fill" : "regular"} /></div>
+                <span className="ios-tab-label">Recent</span>
+              </button>
+              <button className={`ios-tab${mobileTab === "shared" ? " active" : ""}`} onClick={() => setMobileTab("shared")}>
+                <div className="ios-tab-ic"><Star size={24} weight={mobileTab === "shared" ? "fill" : "regular"} /></div>
+                <span className="ios-tab-label">Starred</span>
+              </button>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* ── Drop overlays ── */}
+      {dragging && (
+        <div className="drop-box-wrap">
+          <div className="drop-box">
+            <div style={{ fontSize: 36, marginBottom: 10 }}>☁️</div>
+            <div className="drop-title">Drop to upload</div>
+            <div className="drop-sub">Files will be added to this folder</div>
+          </div>
         </div>
-      ) : null}
+      )}
+
+      {/* ── Viewer — macOS sheet on desktop, iOS sheet on mobile ── */}
+      {viewer.open && (
+        <>
+          {/* Desktop viewer */}
+          <div className="viewer-overlay" onClick={closeViewer} style={{ display: undefined }}>
+            <div className="viewer-win" onClick={e => e.stopPropagation()}>
+              <div className="viewer-titlebar">
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="tb-btn tb-btn-ghost" style={{ height: 26, fontSize: 12 }} onClick={closeViewer}>{Ic.x()} Close</button>
+                </div>
+                <div className="viewer-fname">{viewer.item?.name ?? "Preview"}</div>
+                <div className="viewer-actions-row">
+                  {viewer.item?.type === "file" && <button className="tb-btn tb-btn-default" style={{ height: 26, fontSize: 12 }} onClick={() => dlFile(viewer.item!)}>{Ic.download()} Download</button>}
+                </div>
+              </div>
+              <div className="viewer-body">
+                {viewer.loading && <div className="empty-state"><div className="empty-sub">Loading…</div></div>}
+                {viewer.error && <div className="error-banner">{Ic.info()}<span>{viewer.error}</span></div>}
+                {!viewer.loading && !viewer.error && viewer.kind === "image" && viewer.url && <img className="viewer-img" src={viewer.url} alt={viewer.item?.name} />}
+                {!viewer.loading && !viewer.error && viewer.kind === "pdf" && viewer.url && <iframe className="viewer-frame" src={viewer.url} title={viewer.item?.name} />}
+                {!viewer.loading && !viewer.error && viewer.kind === "text" && <pre className="viewer-text">{viewer.text ?? ""}</pre>}
+                {!viewer.loading && !viewer.error && viewer.kind === "unknown" && <div className="empty-state"><div className="empty-ic">📄</div><div className="empty-title">No preview</div><div className="empty-sub">Download to view this file</div></div>}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Toasts */}
       <div className="toast-shelf">
-        {toasts.map((t) => (
+        {toasts.map(t => (
           <div key={t.id} className={`toast ${t.kind}`}>
-            <span className="ti">
-              {t.kind === "success" ? I.check() : null}
-              {t.kind === "error" ? I.x() : null}
-              {t.kind === "info" ? I.info() : null}
-            </span>
+            <span className="t-ic">{t.kind === "success" ? Ic.check() : t.kind === "error" ? Ic.x() : Ic.info()}</span>
             {t.message}
           </div>
         ))}
