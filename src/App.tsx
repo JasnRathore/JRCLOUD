@@ -1597,7 +1597,7 @@ export default function App() {
         </>
       )}
 
-      {/* Toasts */}
+      {/* ── Toasts ── */}
       <div className="toast-shelf">
         {toasts.map(t => (
           <div key={t.id} className={`toast ${t.kind}`}>
