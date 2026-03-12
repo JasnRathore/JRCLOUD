@@ -1,28 +1,17 @@
 import { Octokit } from "@octokit/rest";
 import { RequestError } from "@octokit/request-error";
+import { getSettings } from "./settings";
 
-const env = import.meta.env as Record<string, string | undefined>;
+let cachedToken = "";
+let cachedClient: Octokit | null = null;
 
-const GITHUB_CONTENT_AUTH_TOKEN =
-  env.VITE_GITHUB_CONTENT_AUTH_TOKEN ?? env.GITHUB_CONTENT_AUTH_TOKEN ?? "";
-const GITHUB_CONTENT_OWNER =
-  env.VITE_GITHUB_CONTENT_OWNER ?? env.GITHUB_CONTENT_OWNER ?? "";
-const GITHUB_CONTENT_REPO =
-  env.VITE_GITHUB_CONTENT_REPO ?? env.GITHUB_CONTENT_REPO ?? "";
-const GITHUB_CONTENT_BRANCH =
-  env.VITE_GITHUB_CONTENT_BRANCH ?? env.GITHUB_CONTENT_BRANCH ?? "main";
-const USER_FOLDER = env.VITE_USER_FOLDER ?? env.USER_FOLDER ?? "";
-
-const contentOctokit = new Octokit({
-  auth: GITHUB_CONTENT_AUTH_TOKEN || undefined,
-});
-
-export const GitInfo = {
-  content_owner: GITHUB_CONTENT_OWNER,
-  content_repo: GITHUB_CONTENT_REPO,
-  content_branch: GITHUB_CONTENT_BRANCH,
-  content_token: GITHUB_CONTENT_AUTH_TOKEN,
-  user_folder: USER_FOLDER,
+const contentOctokit = (): Octokit => {
+  const token = getSettings().authToken || "";
+  if (!cachedClient || token !== cachedToken) {
+    cachedToken = token;
+    cachedClient = new Octokit({ auth: token || undefined });
+  }
+  return cachedClient!;
 };
 
 const textEncoder = new TextEncoder();
@@ -38,7 +27,7 @@ const base64EncodeBytes = (bytes: Uint8Array) => {
 };
 
 const base64DecodeToBytes = (base64: string) => {
-  const binary = atob(base64.replace(/\n/g, ""));
+  const binary = atob(base64.replace(/\s/g, ""));
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
     bytes[i] = binary.charCodeAt(i);
@@ -58,6 +47,49 @@ const fileToBase64 = async (file: File) => {
 };
 
 const normalizePath = (path: string) => path.replace(/^\/+|\/+$/g, "");
+
+const mimeFromPath = (value: string) => {
+  const ext = value.split(".").pop()?.toLowerCase() ?? "";
+  switch (ext) {
+    case "pdf":
+      return "application/pdf";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "gif":
+      return "image/gif";
+    case "svg":
+      return "image/svg+xml";
+    case "webp":
+      return "image/webp";
+    case "mp4":
+      return "video/mp4";
+    case "mov":
+      return "video/quicktime";
+    case "webm":
+      return "video/webm";
+    case "m4v":
+      return "video/x-m4v";
+    case "txt":
+    case "md":
+    case "json":
+    case "js":
+    case "ts":
+    case "tsx":
+    case "jsx":
+    case "css":
+    case "html":
+    case "yml":
+    case "yaml":
+    case "log":
+    case "csv":
+      return "text/plain";
+    default:
+      return "application/octet-stream";
+  }
+};
 
 interface GitData {
   owner: string;
@@ -104,7 +136,7 @@ export async function updateGitHubFile({
   const base64Content = base64EncodeString(fileContentToSend);
 
   try {
-    const response = await contentOctokit.repos.createOrUpdateFileContents({
+    const response = await contentOctokit().repos.createOrUpdateFileContents({
       owner,
       repo,
       path,
@@ -124,7 +156,7 @@ export async function updateGitHubFile({
       throw error;
     }
 
-    const { data: fileData } = await contentOctokit.repos.getContent({
+    const { data: fileData } = await contentOctokit().repos.getContent({
       owner,
       repo,
       path,
@@ -132,7 +164,7 @@ export async function updateGitHubFile({
     });
 
     if (!Array.isArray(fileData) && "sha" in fileData && typeof fileData.sha === "string") {
-      const retry = await contentOctokit.repos.createOrUpdateFileContents({
+      const retry = await contentOctokit().repos.createOrUpdateFileContents({
         owner,
         repo,
         path,
@@ -164,7 +196,7 @@ export async function uploadGitHubImage({
   const base64Content = await fileToBase64(file);
 
   try {
-    const { data: fileData } = await contentOctokit.repos.getContent({
+    const { data: fileData } = await contentOctokit().repos.getContent({
       owner,
       repo,
       path: filePath,
@@ -194,7 +226,7 @@ export async function uploadGitHubImage({
   }
 
   try {
-    const response = await contentOctokit.repos.createOrUpdateFileContents({
+    const response = await contentOctokit().repos.createOrUpdateFileContents({
       owner,
       repo,
       path: filePath,
@@ -247,14 +279,14 @@ export async function uploadGitHubImages({
   }
 
   try {
-    const { data: refData } = await contentOctokit.git.getRef({
+    const { data: refData } = await contentOctokit().git.getRef({
       owner,
       repo,
       ref: `heads/${branch}`,
     });
     const latestCommitSha = refData.object.sha;
 
-    const { data: commitData } = await contentOctokit.git.getCommit({
+    const { data: commitData } = await contentOctokit().git.getCommit({
       owner,
       repo,
       commit_sha: latestCommitSha,
@@ -270,7 +302,7 @@ export async function uploadGitHubImages({
 
       const base64Content = await fileToBase64(file);
 
-      const { data: blobData } = await contentOctokit.git.createBlob({
+      const { data: blobData } = await contentOctokit().git.createBlob({
         owner,
         repo,
         content: base64Content,
@@ -287,7 +319,7 @@ export async function uploadGitHubImages({
       uploadedPaths.push(filePath);
     }
 
-    const { data: newTreeData } = await contentOctokit.git.createTree({
+    const { data: newTreeData } = await contentOctokit().git.createTree({
       owner,
       repo,
       tree: newTreeEntries,
@@ -295,7 +327,7 @@ export async function uploadGitHubImages({
     });
     const newTreeSha = newTreeData.sha;
 
-    const { data: newCommitData } = await contentOctokit.git.createCommit({
+    const { data: newCommitData } = await contentOctokit().git.createCommit({
       owner,
       repo,
       message,
@@ -304,7 +336,7 @@ export async function uploadGitHubImages({
     });
     const newCommitSha = newCommitData.sha;
 
-    await contentOctokit.git.updateRef({
+    await contentOctokit().git.updateRef({
       owner,
       repo,
       ref: `heads/${branch}`,
@@ -343,7 +375,7 @@ export async function readGitHubFile({
   branch = "main",
 }: GitReadData): Promise<object | string> {
   try {
-    const { data: fileData } = await contentOctokit.repos.getContent({
+    const { data: fileData } = await contentOctokit().repos.getContent({
       owner,
       repo,
       path,
@@ -386,13 +418,16 @@ export async function readGitHubFile({
   }
 }
 
-export async function getGitHubFileBlob({
-  owner,
-  repo,
-  path,
-  branch = "main",
-}: GitReadData): Promise<{ blob: Blob; name: string }> {
-  const { data } = await contentOctokit.repos.getContent({
+export async function getGitHubFileBlob(
+  {
+    owner,
+    repo,
+    path,
+    branch = "main",
+  }: GitReadData,
+  onProgress?: (pct: number) => void
+): Promise<{ blob: Blob; name: string }> {
+  const { data } = await contentOctokit().repos.getContent({
     owner,
     repo,
     path,
@@ -403,13 +438,132 @@ export async function getGitHubFileBlob({
     throw new Error(`Path '${path}' is a directory, not a file.`);
   }
 
-  if (!("content" in data) || typeof data.content !== "string") {
-    throw new Error(`Could not retrieve content for file '${path}'.`);
+  const name = data.name ?? path.split("/").pop() ?? "download";
+  const mime = mimeFromPath(name || path);
+  const downloadUrl = "download_url" in data && typeof data.download_url === "string" ? data.download_url : "";
+  const token = getSettings().authToken;
+  const isImage = mime.startsWith("image/");
+
+  const fetchRawViaApi = async () => {
+    const encPath = path.split("/").map(seg => encodeURIComponent(seg)).join("/");
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encPath}?ref=${encodeURIComponent(branch)}`;
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github.raw",
+    };
+    if (token) headers.Authorization = `token ${token}`;
+    const resp = await fetch(url, { headers });
+    if (!resp.ok) {
+      throw new Error(`Failed to download '${path}' (${resp.status})`);
+    }
+    const raw = await resp.arrayBuffer();
+    onProgress?.(100);
+    return { blob: new Blob([raw], { type: mime }), name };
+  };
+
+  if (isImage) {
+    try {
+      return await fetchRawViaApi();
+    } catch {
+      // fall through to other strategies
+    }
   }
 
-  const bytes = base64DecodeToBytes(data.content);
-  const blob = new Blob([bytes], { type: "application/octet-stream" });
-  return { blob, name: data.name ?? path.split("/").pop() ?? "download" };
+  if ("content" in data && typeof data.content === "string") {
+    const bytes = base64DecodeToBytes(data.content);
+    onProgress?.(100);
+    const blob = new Blob([bytes], { type: mime });
+    return { blob, name };
+  }
+
+  if ("sha" in data && typeof data.sha === "string" && data.sha) {
+    const { data: blobData } = await contentOctokit().git.getBlob({
+      owner,
+      repo,
+      file_sha: data.sha,
+    });
+    if ("truncated" in blobData && blobData.truncated) {
+      try {
+        return await fetchRawViaApi();
+      } catch {
+        if (downloadUrl) {
+          const headers: Record<string, string> = {
+            Accept: "application/octet-stream",
+          };
+          if (token) headers.Authorization = `token ${token}`;
+
+          const resp = await fetch(downloadUrl, { headers });
+          if (!resp.ok) {
+            throw new Error(`Failed to download '${path}' (${resp.status})`);
+          }
+
+          const total = Number(resp.headers.get("Content-Length") ?? 0);
+          if (!resp.body || !total) {
+            const raw = await resp.arrayBuffer();
+            onProgress?.(100);
+            return { blob: new Blob([raw], { type: mime }), name };
+          }
+
+          const reader = resp.body.getReader();
+          const chunks: Uint8Array[] = [];
+          let received = 0;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              chunks.push(value);
+              received += value.length;
+              onProgress?.(Math.round((received / total) * 100));
+            }
+          }
+          return { blob: new Blob(chunks, { type: mime }), name };
+        }
+      }
+    }
+    if (typeof blobData.content === "string") {
+      const bytes = blobData.encoding === "base64"
+        ? base64DecodeToBytes(blobData.content)
+        : textEncoder.encode(blobData.content);
+      onProgress?.(100);
+      const blob = new Blob([bytes], { type: mime });
+      return { blob, name };
+    }
+  }
+
+  if (downloadUrl) {
+    const headers: Record<string, string> = {
+      Accept: "application/octet-stream",
+    };
+    if (token) headers.Authorization = `token ${token}`;
+
+    const resp = await fetch(downloadUrl, { headers });
+    if (!resp.ok) {
+      // Fallback to API raw (CORS-safe for private repos).
+      return fetchRawViaApi();
+    }
+
+    const total = Number(resp.headers.get("Content-Length") ?? 0);
+    if (!resp.body || !total) {
+      const raw = await resp.arrayBuffer();
+      onProgress?.(100);
+      return { blob: new Blob([raw], { type: mime }), name };
+    }
+
+    const reader = resp.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        received += value.length;
+        onProgress?.(Math.round((received / total) * 100));
+      }
+    }
+    return { blob: new Blob(chunks, { type: mime }), name };
+  }
+
+  throw new Error(`Could not retrieve content for file '${path}'.`);
 }
 
 export async function getGitHubRepoSize({
@@ -419,7 +573,7 @@ export async function getGitHubRepoSize({
   owner: string;
   repo: string;
 }): Promise<number> {
-  const { data } = await contentOctokit.repos.get({ owner, repo });
+  const { data } = await contentOctokit().repos.get({ owner, repo });
   const sizeKb = data.size ?? 0;
   return sizeKb * 1024;
 }
@@ -460,7 +614,7 @@ export async function listGitHubPath({
   const cleanedPath = normalizePath(path);
   let data: unknown;
   try {
-    const resp = await contentOctokit.repos.getContent({
+    const resp = await contentOctokit().repos.getContent({
       owner,
       repo,
       path: cleanedPath || undefined,
@@ -544,7 +698,7 @@ export async function uploadGitHubFile({
   const base64Content = await fileToBase64(file);
 
   try {
-    return await contentOctokit.repos.createOrUpdateFileContents({
+    return await contentOctokit().repos.createOrUpdateFileContents({
       owner,
       repo,
       path: cleanedPath,
@@ -557,7 +711,7 @@ export async function uploadGitHubFile({
       throw error;
     }
 
-    const { data: fileData } = await contentOctokit.repos.getContent({
+    const { data: fileData } = await contentOctokit().repos.getContent({
       owner,
       repo,
       path: cleanedPath,
@@ -565,7 +719,7 @@ export async function uploadGitHubFile({
     });
 
     if (!Array.isArray(fileData) && "sha" in fileData && typeof fileData.sha === "string") {
-      return contentOctokit.repos.createOrUpdateFileContents({
+      return contentOctokit().repos.createOrUpdateFileContents({
         owner,
         repo,
         path: cleanedPath,
@@ -602,7 +756,7 @@ export async function deleteGitHubPath({
   const cleanedPath = normalizePath(path);
 
   if (isDir) {
-    const { data } = await contentOctokit.git.getTree({
+    const { data } = await contentOctokit().git.getTree({
       owner,
       repo,
       tree_sha: branch,
@@ -616,20 +770,25 @@ export async function deleteGitHubPath({
 
     for (const entry of entries) {
       if (!entry.path || !entry.sha) continue;
-      await contentOctokit.repos.deleteFile({
-        owner,
-        repo,
-        path: entry.path,
-        message: message ?? `Delete ${entry.path}`,
-        sha: entry.sha,
-        branch,
-      });
+      try {
+        await contentOctokit().repos.deleteFile({
+          owner,
+          repo,
+          path: entry.path,
+          message: message ?? `Delete ${entry.path}`,
+          sha: entry.sha,
+          branch,
+        });
+      } catch (error: unknown) {
+        if (error instanceof RequestError && error.status === 404) continue;
+        throw error;
+      }
     }
     return;
   }
 
   if (!sha) {
-    const { data: fileData } = await contentOctokit.repos.getContent({
+    const { data: fileData } = await contentOctokit().repos.getContent({
       owner,
       repo,
       path: cleanedPath,
@@ -644,14 +803,19 @@ export async function deleteGitHubPath({
     throw new Error(`Could not resolve sha for ${cleanedPath}`);
   }
 
-  await contentOctokit.repos.deleteFile({
-    owner,
-    repo,
-    path: cleanedPath,
-    message: message ?? `Delete ${cleanedPath}`,
-    sha,
-    branch,
-  });
+  try {
+    await contentOctokit().repos.deleteFile({
+      owner,
+      repo,
+      path: cleanedPath,
+      message: message ?? `Delete ${cleanedPath}`,
+      sha,
+      branch,
+    });
+  } catch (error: unknown) {
+    if (error instanceof RequestError && error.status === 404) return;
+    throw error;
+  }
 }
 
 interface GitMoveData {
@@ -675,7 +839,7 @@ export async function moveGitHubPath({
   const toPath = normalizePath(to);
 
   if (isDir) {
-    const { data } = await contentOctokit.git.getTree({
+    const { data } = await contentOctokit().git.getTree({
       owner,
       repo,
       tree_sha: branch,
@@ -691,7 +855,7 @@ export async function moveGitHubPath({
       if (!entry.path) continue;
       const relative = entry.path.slice(prefix.length);
       const targetPath = toPath ? `${toPath}/${relative}` : relative;
-      const { data: fileData } = await contentOctokit.repos.getContent({
+      const { data: fileData } = await contentOctokit().repos.getContent({
         owner,
         repo,
         path: entry.path,
@@ -699,7 +863,7 @@ export async function moveGitHubPath({
       });
       if (Array.isArray(fileData) || !("content" in fileData)) continue;
 
-      await contentOctokit.repos.createOrUpdateFileContents({
+      await contentOctokit().repos.createOrUpdateFileContents({
         owner,
         repo,
         path: targetPath,
@@ -709,7 +873,7 @@ export async function moveGitHubPath({
       });
 
       if (entry.sha) {
-        await contentOctokit.repos.deleteFile({
+        await contentOctokit().repos.deleteFile({
           owner,
           repo,
           path: entry.path,
@@ -723,7 +887,7 @@ export async function moveGitHubPath({
     return;
   }
 
-  const { data: fileData } = await contentOctokit.repos.getContent({
+  const { data: fileData } = await contentOctokit().repos.getContent({
     owner,
     repo,
     path: fromPath,
@@ -735,7 +899,7 @@ export async function moveGitHubPath({
   }
 
   try {
-    await contentOctokit.repos.createOrUpdateFileContents({
+    await contentOctokit().repos.createOrUpdateFileContents({
       owner,
       repo,
       path: toPath,
@@ -747,7 +911,7 @@ export async function moveGitHubPath({
     const status = (error as { status?: number }).status;
     if (status !== 422) throw error;
 
-    const { data: targetData } = await contentOctokit.repos.getContent({
+    const { data: targetData } = await contentOctokit().repos.getContent({
       owner,
       repo,
       path: toPath,
@@ -755,7 +919,7 @@ export async function moveGitHubPath({
     });
 
     if (!Array.isArray(targetData) && "sha" in targetData && typeof targetData.sha === "string") {
-      await contentOctokit.repos.createOrUpdateFileContents({
+      await contentOctokit().repos.createOrUpdateFileContents({
         owner,
         repo,
         path: toPath,
@@ -770,7 +934,7 @@ export async function moveGitHubPath({
   }
 
   if ("sha" in fileData && typeof fileData.sha === "string") {
-    await contentOctokit.repos.deleteFile({
+    await contentOctokit().repos.deleteFile({
       owner,
       repo,
       path: fromPath,
@@ -780,3 +944,4 @@ export async function moveGitHubPath({
     });
   }
 }
+
